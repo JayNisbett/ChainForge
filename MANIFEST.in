@@ -1,3 +1,0 @@
-graft chainforge/react-server/build
-graft chainforge/examples
-include README.md
