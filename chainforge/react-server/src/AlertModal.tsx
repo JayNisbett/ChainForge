@@ -65,7 +65,7 @@ export const AlertModalContext = createContext<
 export const AlertModalProvider = ({
   children,
 }: {
-  children: React.ReactNode[];
+  children: React.ReactNode | React.ReactNode[];
 }) => {
   // Create one AlertModal for the entire application
   const alertModal = useRef<AlertModalRef>(null);

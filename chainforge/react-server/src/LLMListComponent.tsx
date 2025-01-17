@@ -27,7 +27,8 @@ import {
   getDefaultModelFormData,
   getDefaultModelSettings,
 } from "./ModelSettingSchemas";
-import useStore, { initLLMProviders, initLLMProviderMenu } from "./store";
+import useStore, { initLLMProviders } from "./store";
+import { initLLMProviderMenu } from "./config";
 import { Dict, JSONCompatible, LLMGroup, LLMSpec } from "./backend/typing";
 import { useContextMenu } from "mantine-contextmenu";
 import { ContextMenuItemOptions } from "mantine-contextmenu/dist/types";

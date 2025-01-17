@@ -1,16 +1,50 @@
 const webpack = require("webpack");
-
-// const dotenv = require('dotenv').config({ path: __dirname + '/.env' })
-const isDevelopment = process.env.NODE_ENV !== "production";
+const { ModuleFederationPlugin } = require("webpack").container;
+const deps = require("./package.json").dependencies;
 
 module.exports = {
   eslint: {
     enable: false,
   },
   webpack: {
-    configure: {
-      resolve: {
+    configure: (webpackConfig, { env }) => {
+      webpackConfig.entry = ["./src/index.js"];
+      webpackConfig.output = {
+        ...webpackConfig.output,
+        publicPath: "auto",
+      };
+
+      webpackConfig.plugins.push(
+        new ModuleFederationPlugin({
+          name: "chainforge",
+          filename: "remoteEntry.js",
+          exposes: {
+            "./App": "./src/bootstrap",
+          },
+          shared: {
+            ...deps,
+            react: {
+              singleton: true,
+              requiredVersion: deps.react,
+              eager: false,
+            },
+            "react-dom": {
+              singleton: true,
+              requiredVersion: deps["react-dom"],
+              eager: false,
+            },
+          },
+        }),
+        new webpack.DefinePlugin({
+          "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+        }),
+      );
+
+      // Add resolve fallbacks
+      webpackConfig.resolve = {
+        ...webpackConfig.resolve,
         fallback: {
+          ...webpackConfig.resolve.fallback,
           process: require.resolve("process/browser"),
           buffer: require.resolve("buffer"),
           https: require.resolve("https-browserify"),
@@ -28,38 +62,18 @@ module.exports = {
           fs: false,
           child_process: false,
         },
-      },
+      };
+
+      return webpackConfig;
     },
-
-    module: {
-      rules: [
-        {
-          test: /node_modules\/https-proxy-agent\//,
-          use: "null-loader",
-        },
-      ],
+  },
+  devServer: {
+    port: 3000,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers":
+        "X-Requested-With, content-type, Authorization",
     },
-
-    plugins: {
-      add: [
-        new webpack.ProvidePlugin({
-          process: "process/browser.js",
-        }),
-
-        // Work around for Buffer is undefined:
-        // https://github.com/webpack/changelog-v5/issues/10
-        new webpack.ProvidePlugin({
-          Buffer: ["buffer", "Buffer"],
-        }),
-      ],
-    },
-
-    // plugins: {add: [
-    //   new webpack.DefinePlugin({
-    //     // 'process': "{}",
-    //     'process.env': "{}", // JSON.stringify(dotenv.parsed),
-    //     // 'process.env.NODE_ENV': JSON.stringify(isDevelopment ? 'development' : 'production'),
-    //   }),
-    // ]},
   },
 };

@@ -24,7 +24,7 @@ import {
 } from "./backend/ai";
 import { IconSparkles, IconAlertCircle } from "@tabler/icons-react";
 import { AlertModalContext } from "./AlertModal";
-import useStore from "./store";
+import { useStore } from "./store";
 import {
   INFO_CODEBLOCK_JS,
   INFO_CODEBLOCK_PY,

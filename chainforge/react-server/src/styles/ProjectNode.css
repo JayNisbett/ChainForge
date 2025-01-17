@@ -1,0 +1,46 @@
+.project-node {
+  min-width: 250px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.project-node-content {
+  padding: 16px;
+}
+
+.project-select {
+  margin-bottom: 16px;
+}
+
+.attributes-container {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 16px;
+}
+
+.attributes-title {
+  margin-bottom: 12px;
+  color: #666;
+}
+
+.attribute-handle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.attribute-label {
+  color: #333;
+  font-size: 0.9em;
+}
+
+.attribute-handle {
+  width: 10px;
+  height: 10px;
+  background: #666;
+  border-radius: 50%;
+}

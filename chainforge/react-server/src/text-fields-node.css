@@ -245,7 +245,7 @@ button.remove-edge-btn:active {
   }
   @keyframes blink-footer {
     50% {
-      background-color: #eff6fbb1; 
+      background-color: #eff6fbb1;
     }
   } */
 
@@ -830,7 +830,7 @@ th .content-editable-div {
     position: relative;
     float: right;
     margin-top: 6px;
-    height: 80px; 
+    height: 80px;
     width: 20px;
   }
   .add-column-btn span {
@@ -1283,4 +1283,90 @@ th .content-editable-div {
 .rjsf .help-block {
   color: #999;
   margin: 0;
+}
+
+/* Project Node Styles */
+.project-node {
+  min-width: 290px;
+  width: 290px;
+  background: white;
+  border-radius: 5px;
+  border: 1px solid #999;
+}
+
+.project-node-content {
+  padding: 10px;
+}
+
+.project-select {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.attributes-container {
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.attribute-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  margin: 2px 0;
+  border-radius: 4px;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.attribute-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.attribute-name {
+  width: 100px;
+  color: #495057;
+  font-family: var(--monofont);
+  font-size: 11px;
+}
+
+.attribute-value {
+  flex: 1;
+  color: #228be6;
+  margin: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--monofont);
+  font-size: 11px;
+}
+
+.required {
+  color: #fa5252;
+  margin-left: 2px;
+}
+
+.attribute-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #adb5bd !important;
+  border: 2px solid white !important;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: crosshair;
+}
+
+.attribute-row:hover .attribute-handle {
+  opacity: 1;
+}
+
+.attribute-handle:hover {
+  background: #228be6 !important;
+}
+
+.node-divider {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid #e9ecef;
 }

@@ -5,7 +5,14 @@ import React, {
   useEffect,
   useContext,
 } from "react";
-import ReactFlow, { Controls, Background, ReactFlowInstance } from "reactflow";
+import ReactDOM from "react-dom/client";
+import ReactFlow, {
+  Controls,
+  Background,
+  ReactFlowInstance,
+  Node,
+  Edge,
+} from "reactflow";
 import {
   Button,
   Menu,
@@ -58,7 +65,8 @@ import {
 import { v4 as uuid } from "uuid";
 import LZString from "lz-string";
 import { EXAMPLEFLOW_1 } from "./example_flows";
-
+import ProjectNode from "./ProjectNode";
+import TaskNode from "./TaskNode";
 // Styling
 import "reactflow/dist/style.css"; // reactflow
 import "./text-fields-node.css"; // project
@@ -69,7 +77,7 @@ import "lazysizes/plugins/attrchange/ls.attrchange";
 
 // State management (from https://reactflow.dev/docs/guides/state-management/)
 import { shallow } from "zustand/shallow";
-import useStore, { StoreHandles } from "./store";
+import useStore, { StoreHandles, Project } from "./store";
 import StorageCache from "./backend/cache";
 import { APP_IS_RUNNING_LOCALLY, browserTabIsActive } from "./backend/utils";
 import { Dict, JSONCompatible, LLMSpec } from "./backend/typing";
@@ -169,6 +177,8 @@ const nodeTypes = {
   join: JoinNode,
   split: SplitNode,
   processor: CodeEvaluatorNode,
+  project: ProjectNode,
+  task: TaskNode,
 };
 
 const edgeTypes = {
@@ -220,7 +230,70 @@ const MenuTooltip = ({
 // const connectionLineStyle = { stroke: '#ddd' };
 const snapGrid: [number, number] = [16, 16];
 
-const App = () => {
+interface MountProps {
+  initialPath?: string;
+  initialData?: {
+    projects?: any[];
+    tasks?: any[];
+  };
+  onNavigate?: (
+    args: { pathname: string } | { type: string; data: any },
+  ) => void;
+}
+
+// Add type for custom event
+interface VueUpdateEvent extends CustomEvent {
+  detail: {
+    type: string;
+    data: any;
+  };
+}
+
+const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
+  const setProjects = useStore((state) => state.setProjects);
+  const setTasks = useStore((state) => state.setTasks);
+  const projects = useStore((state) => state.projects);
+  const tasks = useStore((state) => state.tasks);
+
+  // Add debugging for initial data
+  useEffect(() => {
+    console.log("App received initialData:", initialData);
+    if (initialData) {
+      if (initialData.projects) {
+        console.log("Setting initial projects:", initialData.projects);
+        setProjects(initialData?.projects);
+      }
+      if (initialData.tasks) {
+        console.log("Setting initial tasks:", initialData.tasks);
+        setTasks(initialData?.tasks);
+      }
+    }
+  }, [initialData, setProjects, setTasks]);
+
+  // Add event listener for updates from Vue
+  useEffect(() => {
+    const handleVueUpdate = (event: VueUpdateEvent) => {
+      const { type, data } = event.detail;
+      console.log("Received update from Vue:", { type, data });
+
+      switch (type) {
+        case "projects":
+          setProjects(data);
+          break;
+        case "tasks":
+          setTasks(data);
+          break;
+        default:
+          console.warn("Unknown update type from Vue:", type);
+      }
+    };
+
+    window.addEventListener("vueUpdate", handleVueUpdate as EventListener);
+    return () => {
+      window.removeEventListener("vueUpdate", handleVueUpdate as EventListener);
+    };
+  }, [setProjects, setTasks]);
+
   // Get nodes, edges, etc. state from the Zustand store:
   const {
     nodes,
@@ -251,9 +324,6 @@ const App = () => {
 
   // For modal popup of example flows
   const examplesModal = useRef<ExampleFlowsModalRef>(null);
-
-  // For an info pop-up that welcomes new users
-  // const [welcomeModalOpened, { open: openWelcomeModal, close: closeWelcomeModal }] = useDisclosure(false);
 
   // For displaying alerts
   const showAlert = useContext(AlertModalContext);
@@ -313,6 +383,8 @@ const App = () => {
   };
 
   const addTextFieldsNode = () => addNode("textFieldsNode", "textfields");
+  const addProjectNode = () => addNode("projectNode", "project", { projects: projects, tasks: tasks });
+  const addTaskNode = () => addNode("taskNode", "task", { tasks: tasks });
   const addPromptNode = () => addNode("promptNode", "prompt", { prompt: "" });
   const addChatTurnNode = () => addNode("chatTurn", "chat", { prompt: "" });
   const addSimpleEvalNode = () => addNode("simpleEval", "simpleval");
@@ -840,14 +912,14 @@ const App = () => {
     }
 
     // Attempt to load an autosaved flow, if one exists:
-    if (autosavedFlowExists()) loadFlowFromAutosave(rf_inst);
-    else {
+    //! if (autosavedFlowExists()) loadFlowFromAutosave(rf_inst);
+    //!else {
       // Load an interesting default starting flow for new users
       importFlowFromJSON(EXAMPLEFLOW_1, rf_inst);
 
       // Open a welcome pop-up
       // openWelcomeModal();
-    }
+    //! }
 
     // Turn off loading wheel
     setIsLoading(false);
@@ -979,6 +1051,25 @@ const App = () => {
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
+              <Menu.Label>Project Data</Menu.Label>
+              <MenuTooltip label="Select a project to use as input for your flow.">
+                <Menu.Item
+                  onClick={addProjectNode}
+                  icon={<IconTextPlus size="16px" />}
+                >
+                  {" "}
+                  Project Node{" "}
+                </Menu.Item>
+              </MenuTooltip>
+              <MenuTooltip label="Select a task to use as input for your flow.">
+                <Menu.Item
+                  onClick={addTaskNode}
+                  icon={<IconTextPlus size="16px" />}
+                >
+                  {" "}
+                  Task Node{" "}
+                </Menu.Item>
+              </MenuTooltip>
               <Menu.Label>Input Data</Menu.Label>
               <MenuTooltip label="Specify input text to prompt or chat nodes. You can also declare variables in brackets {} to chain TextFields together.">
                 <Menu.Item
@@ -1243,5 +1334,4 @@ const App = () => {
       </div>
     );
 };
-
 export default App;
