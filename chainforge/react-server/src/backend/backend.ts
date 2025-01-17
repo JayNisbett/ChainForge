@@ -619,8 +619,8 @@ export async function countQueries(
             )
               ? cache_bucket
               : cache_bucket === undefined
-                ? []
-                : [cache_bucket];
+              ? []
+              : [cache_bucket];
 
             let found_resp = false;
             for (const cached_resp of cached_resps) {
@@ -1048,7 +1048,9 @@ export async function executejs(
         throw new Error(`${req_func_name}() function is undefined.`);
     } catch (err) {
       return {
-        error: `Could not compile code. Error message:\n${(err as Error).message}`,
+        error: `Could not compile code. Error message:\n${
+          (err as Error).message
+        }`,
       };
     }
   }
@@ -1083,7 +1085,9 @@ export async function executejs(
       REVERT_CONSOLE_LOGGING(id, iframe.contentWindow),
     );
     return {
-      error: `Error encountered while trying to run "evaluate" method:\n${(err as Error).message}`,
+      error: `Error encountered while trying to run "evaluate" method:\n${
+        (err as Error).message
+      }`,
       logs: all_logs,
     };
   }
@@ -1151,7 +1155,11 @@ export async function executepy(
     // Create a wrapper to execute the Python code, passing in the ResponseInfo object and outputting the result:
     const code_header = `from collections import namedtuple\nResponseInfo = namedtuple('ResponseInfo', 'text prompt var meta llm')`;
     const eval_func = async (resp: ResponseInfo) => {
-      const resp_info_init_code = `__resp_info = ResponseInfo(text=${JSON.stringify(resp.text)}, prompt=${JSON.stringify(resp.prompt)}, var=${JSON.stringify(resp.var)}, meta=${JSON.stringify(resp.meta)}, llm=${JSON.stringify(resp.llm)})`;
+      const resp_info_init_code = `__resp_info = ResponseInfo(text=${JSON.stringify(
+        resp.text,
+      )}, prompt=${JSON.stringify(resp.prompt)}, var=${JSON.stringify(
+        resp.var,
+      )}, meta=${JSON.stringify(resp.meta)}, llm=${JSON.stringify(resp.llm)})`;
       try {
         // We have to pass in resp_info manually, since providing context via "from js import..." results in a race condition
         const { results, error } = await execPy(
@@ -1186,7 +1194,9 @@ export async function executepy(
       );
     } catch (err) {
       return {
-        error: `Error encountered while trying to run "evaluate" method:\n${(err as Error).message}`,
+        error: `Error encountered while trying to run "evaluate" method:\n${
+          (err as Error).message
+        }`,
         logs: all_logs,
       };
     }

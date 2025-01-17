@@ -887,7 +887,9 @@ const LLMResponseInspector: React.FC<LLMResponseInspectorProps> = ({
             </ActionIcon>
           </Tooltip>
           <Tooltip
-            label={`Filter responses by term (${filterBySearchValue ? "on" : "off"})`}
+            label={`Filter responses by term (${
+              filterBySearchValue ? "on" : "off"
+            })`}
             withArrow
             arrowPosition="center"
           >

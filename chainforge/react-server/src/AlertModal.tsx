@@ -22,36 +22,37 @@ export interface AlertModalRef {
 /**
  * The Alert Modal displays error messages to the user in a pop-up dialog.
  */
-export const AlertModal = forwardRef<AlertModalRef>(
-  function AlertModal(props, ref) {
-    // Mantine modal popover for alerts
-    const [opened, { open, close }] = useDisclosure(false);
-    const [alertMsg, setAlertMsg] = useState("");
+export const AlertModal = forwardRef<AlertModalRef>(function AlertModal(
+  props,
+  ref,
+) {
+  // Mantine modal popover for alerts
+  const [opened, { open, close }] = useDisclosure(false);
+  const [alertMsg, setAlertMsg] = useState("");
 
-    // This gives the parent access to triggering the modal alert
-    const trigger = (msg?: string | Error) => {
-      if (!msg) msg = "Unknown error.";
-      else if (typeof msg !== "string") msg = msg.message;
-      console.error(msg);
-      setAlertMsg(msg);
-      open();
-    };
-    useImperativeHandle(ref, () => ({
-      trigger,
-    }));
+  // This gives the parent access to triggering the modal alert
+  const trigger = (msg?: string | Error) => {
+    if (!msg) msg = "Unknown error.";
+    else if (typeof msg !== "string") msg = msg.message;
+    console.error(msg);
+    setAlertMsg(msg);
+    open();
+  };
+  useImperativeHandle(ref, () => ({
+    trigger,
+  }));
 
-    return (
-      <Modal
-        opened={opened}
-        onClose={close}
-        title="Error"
-        styles={ALERT_MODAL_STYLE}
-      >
-        <p style={{ whiteSpace: "pre-line" }}>{alertMsg}</p>
-      </Modal>
-    );
-  },
-);
+  return (
+    <Modal
+      opened={opened}
+      onClose={close}
+      title="Error"
+      styles={ALERT_MODAL_STYLE}
+    >
+      <p style={{ whiteSpace: "pre-line" }}>{alertMsg}</p>
+    </Modal>
+  );
+});
 export default AlertModal;
 
 export const AlertModalContext = createContext<

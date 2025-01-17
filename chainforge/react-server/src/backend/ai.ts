@@ -109,7 +109,11 @@ function autofillSystemMessage(
   n: number,
   templateVariables?: string[],
 ): string {
-  return `Here is a list of commands or items. Say what the pattern seems to be in a single sentence. Then, generate ${n} more commands or items following the pattern, as an unordered markdown list. ${templateVariables && templateVariables.length > 0 ? templateVariableMessage(templateVariables) : ""}`;
+  return `Here is a list of commands or items. Say what the pattern seems to be in a single sentence. Then, generate ${n} more commands or items following the pattern, as an unordered markdown list. ${
+    templateVariables && templateVariables.length > 0
+      ? templateVariableMessage(templateVariables)
+      : ""
+  }`;
 }
 
 /**
@@ -138,7 +142,13 @@ function GARSystemMessage(
   creative?: boolean,
   generatePrompts?: boolean,
 ): string {
-  return `Generate a list of exactly ${n} items. Format your response as an unordered markdown list using "-". Do not ever repeat anything.${creative ? "Be unconventional with your outputs." : ""} ${generatePrompts ? "Your outputs should be commands that can be given to an AI chat assistant." : ""} If the user has specified items or inputs to their command, generate a template in Jinja format, with single braces {} around the masked variables.`;
+  return `Generate a list of exactly ${n} items. Format your response as an unordered markdown list using "-". Do not ever repeat anything.${
+    creative ? "Be unconventional with your outputs." : ""
+  } ${
+    generatePrompts
+      ? "Your outputs should be commands that can be given to an AI chat assistant."
+      : ""
+  } If the user has specified items or inputs to their command, generate a template in Jinja format, with single braces {} around the masked variables.`;
 }
 
 /**
@@ -149,7 +159,11 @@ function GARSystemMessage(
  * @returns the system message
  */
 function GARTSystemMessage(n: number, generatePrompts?: boolean): string {
-  return `Generate a table with exactly ${n} rows. Format your response as a markdown table using. Do not ever repeat anything. ${generatePrompts ? "Your outputs should be commands that can be given to an AI chat assistant." : ""} If the user has specified items or inputs to their command, generate a template in Jinja format, with single braces {} around the masked variables.`;
+  return `Generate a table with exactly ${n} rows. Format your response as a markdown table using. Do not ever repeat anything. ${
+    generatePrompts
+      ? "Your outputs should be commands that can be given to an AI chat assistant."
+      : ""
+  } If the user has specified items or inputs to their command, generate a template in Jinja format, with single braces {} around the masked variables.`;
 }
 
 /**
@@ -644,7 +658,9 @@ export async function generateAndReplaceTable(
   } catch (error) {
     console.error("Error in generateAndReplaceTable:", error);
     throw new AIError(
-      `Failed to generate and replace table. Details: ${(error as Error).message || error}`,
+      `Failed to generate and replace table. Details: ${
+        (error as Error).message || error
+      }`,
     );
   }
 }

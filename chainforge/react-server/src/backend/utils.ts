@@ -650,7 +650,9 @@ export async function call_anthropic(
     if (APP_IS_RUNNING_LOCALLY()) {
       // If we're running locally, route the request through the Flask backend,
       // where we can use the Anthropic Python API to make the API call:
-      const url = `https://api.anthropic.com/v1/${use_messages_api ? "messages" : "complete"}`;
+      const url = `https://api.anthropic.com/v1/${
+        use_messages_api ? "messages" : "complete"
+      }`;
       const headers = {
         Accept: "application/json",
         "anthropic-version": "2023-06-01",
@@ -2087,8 +2089,8 @@ export const extractLLMLookup = (
         typeof r === "string"
           ? undefined
           : !r.llm || typeof r.llm === "string"
-            ? r.llm
-            : r.llm.key;
+          ? r.llm
+          : r.llm.key;
       if (
         typeof r === "string" ||
         !r.llm ||

@@ -85,9 +85,15 @@ export const buildGenEvalCodePrompt = (
   specPrompt: string,
   manyFuncs?: boolean,
   onlyBooleanFuncs?: boolean,
-) => `You are to generate ${manyFuncs ? "many different functions" : "one function"} to evaluate textual data, given a user-specified specification.
-The function${manyFuncs ? "s" : ""} will be mapped over an array of objects of type ResponseInfo.
-${manyFuncs ? "Each" : "Your"} solution must contain a single function called 'evaluate' that takes a single object, 'r', of type ResponseInfo. A ResponseInfo is defined as:
+) => `You are to generate ${
+  manyFuncs ? "many different functions" : "one function"
+} to evaluate textual data, given a user-specified specification.
+The function${
+  manyFuncs ? "s" : ""
+} will be mapped over an array of objects of type ResponseInfo.
+${
+  manyFuncs ? "Each" : "Your"
+} solution must contain a single function called 'evaluate' that takes a single object, 'r', of type ResponseInfo. A ResponseInfo is defined as:
 
 \`\`\`${progLang === "javascript" ? INFO_CODEBLOCK_JS : INFO_CODEBLOCK_PY}\`\`\`
 
@@ -95,9 +101,17 @@ For instance, here is an evaluator that returns the length of a response:
 
 \`\`\`${progLang === "javascript" ? INFO_EXAMPLE_JS : INFO_EXAMPLE_PY}\`\`\`
 
-You can only write in ${progLang.charAt(0).toUpperCase() + progLang.substring(1)}.
-You ${progLang === "javascript" ? 'CANNOT import any external packages, and always use "let" to define variables instead of "var".' : "can use imports if necessary. Do not include any type hints."}
-Your function${manyFuncs ? "s" : ""} can ONLY return ${onlyBooleanFuncs ? "boolean" : "boolean, numeric, or string"} values.
+You can only write in ${
+  progLang.charAt(0).toUpperCase() + progLang.substring(1)
+}.
+You ${
+  progLang === "javascript"
+    ? 'CANNOT import any external packages, and always use "let" to define variables instead of "var".'
+    : "can use imports if necessary. Do not include any type hints."
+}
+Your function${manyFuncs ? "s" : ""} can ONLY return ${
+  onlyBooleanFuncs ? "boolean" : "boolean, numeric, or string"
+} values.
 ${context}
 Here is the user's specification:
 
@@ -945,7 +959,11 @@ export function AIGenCodeEvaluatorPopover({
 
     const template = `Edit the code below according to the following: ${editPrompt}
 
-You ${progLang === "javascript" ? "CANNOT import any external packages." : "can use imports if necessary. Do not include any type hints."}
+You ${
+      progLang === "javascript"
+        ? "CANNOT import any external packages."
+        : "can use imports if necessary. Do not include any type hints."
+    }
 Functions should only return boolean, numeric, or string values. Present the edited code in a single block.
 
 Code:

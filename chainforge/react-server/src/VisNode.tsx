@@ -725,7 +725,9 @@ const VisNode: React.FC<VisNodeProps> = ({ data, id }) => {
             selectedLegendItems.length === 1 &&
             selectedLegendItems[0] === label
           )
-            setSelectedLegendItems(null); // Clicking twice on a legend item deselects it and displays all
+            setSelectedLegendItems(
+              null,
+            ); // Clicking twice on a legend item deselects it and displays all
           else setSelectedLegendItems([label]);
         };
         plot_legend = (

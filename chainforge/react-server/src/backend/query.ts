@@ -253,8 +253,8 @@ export class PromptPipeline {
         const cached_resps: RawLLMResponseObject[] = Array.isArray(cache_bucket)
           ? cache_bucket
           : cache_bucket === undefined
-            ? []
-            : [cache_bucket];
+          ? []
+          : [cache_bucket];
 
         // Check if there's a cached response with the same prompt + (if present) chat history and settings vars:
         let cached_resp: RawLLMResponseObject | undefined;

@@ -6,7 +6,7 @@ import useStore from "./store";
 import NodeLabel from "./NodeLabelComponent";
 import BaseNode from "./BaseNode";
 
-function ProjectNode({ data, id }) {
+function TaskNode({ data, id }) {
   console.log("ProjectNode mounted with data:", data);
 
   const setDataPropsForNode = useStore((state) => state.setDataPropsForNode);
@@ -186,4 +186,4 @@ function ProjectNode({ data, id }) {
   );
 }
 
-export default ProjectNode;
+export default TaskNode;

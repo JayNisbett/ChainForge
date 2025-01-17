@@ -251,8 +251,8 @@ export const CodeEvaluatorComponent = forwardRef<
           ? /def\s+evaluate\s*(.*):/
           : /function\s+evaluate\s*(.*)/
         : progLang === "python"
-          ? /def\s+process\s*(.*):/
-          : /function\s+process\s*(.*)/;
+        ? /def\s+process\s*(.*):/
+        : /function\s+process\s*(.*)/;
     if (codeText.search(find_func_regex) === -1) {
       const req_func_name = node_type === "evaluator" ? "evaluate" : "process";
       const err_msg = `Could not find required function '${req_func_name}'. Make sure you have defined an '${req_func_name}' function.`;

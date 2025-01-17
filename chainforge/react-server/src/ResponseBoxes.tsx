@@ -39,8 +39,8 @@ export const getEvalResultStr = (
     const color = SUCCESS_EVAL_SCORES.has(eval_str)
       ? "black"
       : FAILURE_EVAL_SCORES.has(eval_str)
-        ? "red"
-        : "black";
+      ? "red"
+      : "black";
     return (
       <>
         {!hide_prefix && <span style={{ color: "gray" }}>{"score: "}</span>}

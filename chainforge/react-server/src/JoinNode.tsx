@@ -317,7 +317,7 @@ const JoinNode: React.FC<JoinNodeProps> = ({ data, id }) => {
                   : undefined,
               metavars: removeLLMTagFromMetadata(p.metavars),
               uid: uuid(),
-            }) as TemplateVarInfo,
+            } as TemplateVarInfo),
         );
 
         // If there's multiple LLMs and groupByLLM is 'within', we need to

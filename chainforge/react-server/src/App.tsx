@@ -383,7 +383,8 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   };
 
   const addTextFieldsNode = () => addNode("textFieldsNode", "textfields");
-  const addProjectNode = () => addNode("projectNode", "project", { projects: projects, tasks: tasks });
+  const addProjectNode = () =>
+    addNode("projectNode", "project", { projects: projects, tasks: tasks });
   const addTaskNode = () => addNode("taskNode", "task", { tasks: tasks });
   const addPromptNode = () => addNode("promptNode", "prompt", { prompt: "" });
   const addChatTurnNode = () => addNode("chatTurn", "chat", { prompt: "" });
@@ -914,11 +915,11 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     // Attempt to load an autosaved flow, if one exists:
     //! if (autosavedFlowExists()) loadFlowFromAutosave(rf_inst);
     //!else {
-      // Load an interesting default starting flow for new users
-      importFlowFromJSON(EXAMPLEFLOW_1, rf_inst);
+    // Load an interesting default starting flow for new users
+    importFlowFromJSON(EXAMPLEFLOW_1, rf_inst);
 
-      // Open a welcome pop-up
-      // openWelcomeModal();
+    // Open a welcome pop-up
+    // openWelcomeModal();
     //! }
 
     // Turn off loading wheel

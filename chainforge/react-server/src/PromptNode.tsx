@@ -548,10 +548,10 @@ const PromptNode: React.FC<PromptNodeProps> = ({
       id,
       node_type !== "chat" ? showContToggle && contWithPriorLLMs : undefined,
     ).then(function (results) {
-      return [results.counts, results.total_num_responses] as [
-        Dict<Dict<number>>,
-        Dict<number>,
-      ];
+      return [
+        results.counts,
+        results.total_num_responses,
+      ] as [Dict<Dict<number>>, Dict<number>];
     });
   };
 
