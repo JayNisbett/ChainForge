@@ -1009,7 +1009,7 @@ const VisNode: React.FC<VisNodeProps> = ({ data, id }) => {
             onChange={handleMultiSelectValueChange}
             className="nodrag nowheel"
             data={multiSelectVars}
-            placeholder="Pick param to plot"
+            data-placeholder="Pick param to plot"
             size="xs"
             value={multiSelectValue}
             miw="80px"

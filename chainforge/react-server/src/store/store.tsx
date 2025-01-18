@@ -9,6 +9,7 @@ import {
   EdgeChange,
   MarkerType,
   Connection,
+  ReactFlowInstance,
 } from "reactflow";
 import { escapeBraces } from "../backend/template";
 import {
@@ -37,7 +38,7 @@ import {
 import { Flow, Group, FlowData } from "../types/flow";
 import { v4 as uuid } from "uuid";
 import { FlowService } from "../services/FlowService";
-import DynamicPromptNode from "../components/nodes/DynamicPromptNode";
+
 // Initial project settings
 const initialAPIKeys = {};
 const initialFlags = { aiSupport: true };
@@ -51,6 +52,7 @@ const togetherGroups = () => {
   togetherModels.forEach((model) => {
     const [groupName, modelName] = model.split("/");
     const spec: LLMSpec = {
+      id: uuid(),
       name: modelName,
       emoji: "🤝",
       model: "together/" + model,
@@ -80,6 +82,7 @@ initLLMProviderMenu.push(togetherLLMProviderMenu);
 
 if (APP_IS_RUNNING_LOCALLY()) {
   initLLMProviderMenu.push({
+    id: uuid(),
     name: "Ollama",
     emoji: "🦙",
     model: "ollama",
@@ -223,6 +226,10 @@ export interface StoreHandles {
   syncSelectedNodes: () => void;
 
   ungroup: (groupNodeId: string) => void;
+
+  // ReactFlowInstance
+  rfInstance: ReactFlowInstance | null;
+  setRfInstance: (instance: ReactFlowInstance | null) => void;
 }
 
 // A global store of variables, used for maintaining state
@@ -894,9 +901,11 @@ export const useStore = create<StoreHandles>((set, get) => ({
     }));
 
     // Add back the original nodes with adjusted positions
-    const newNodes = groupedNodes.map((node) => {
+    const newNodes = groupedNodes.map((node: Node) => {
       // Find the original node in the group's data to get its full configuration
-      const originalNode = groupNode.data.nodes.find((n) => n.id === node.id);
+      const originalNode = groupNode.data.nodes.find(
+        (n: { id: string }) => n.id === node.id,
+      );
 
       return {
         id: node.id,
@@ -916,26 +925,20 @@ export const useStore = create<StoreHandles>((set, get) => ({
 
     // Add back the original edges
     const newEdges = connections
-      .filter((conn) => {
-        // Only include edges where both source and target nodes exist
-        const sourceExists = groupedNodes.some((n) => n.id === conn.source);
-        const targetExists = groupedNodes.some((n) => n.id === conn.target);
+      .filter((conn: { source: string; target: string }) => {
+        const sourceExists = groupedNodes.some(
+          (n: Node) => n.id === conn.source,
+        );
+        const targetExists = groupedNodes.some(
+          (n: Node) => n.id === conn.target,
+        );
         return sourceExists && targetExists;
       })
-      .map(
-        (conn) =>
-          ({
-            id: `${conn.source}-${conn.target}`,
-            source: conn.source,
-            target: conn.target,
-            sourceHandle: conn.sourceHandle,
-            targetHandle: conn.targetHandle,
-            type: "default", // Add default edge type
-            // Add any other edge properties needed
-            interactionWidth: 40,
-            markerEnd: { type: MarkerType.Arrow, width: 22, height: 22 },
-          }) as Edge,
-      );
+      .map((conn: { source: string; target: string }) => ({
+        id: `${conn.source}-${conn.target}`,
+        source: conn.source,
+        target: conn.target,
+      }));
 
     // Update the store with new nodes and edges
     set((state) => ({
@@ -943,6 +946,10 @@ export const useStore = create<StoreHandles>((set, get) => ({
       edges: [...state.edges, ...newEdges],
     }));
   },
+
+  // ReactFlowInstance
+  rfInstance: null,
+  setRfInstance: (instance) => set({ rfInstance: instance }),
 }));
 
 export default useStore;

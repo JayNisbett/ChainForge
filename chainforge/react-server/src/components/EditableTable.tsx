@@ -152,7 +152,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
                 >
                   {/* We use contenteditable because it loads *much* faster than textareas, which is important for big tables. */}
                   <p
-                    placeholder={c.header}
+                    data-placeholder={c.header}
                     onClick={forceFocusContentEditable}
                     onBlur={(e) =>
                       handleSaveCell(rowIdx, c.key, e.currentTarget.innerText)
@@ -179,6 +179,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               {/* <CellTextarea initialValue={c.header} rowIdx={-1} column={c} handleSaveCell={handleSaveCell} /> */}
               <p
+                data-placeholder={c.header}
                 onClick={forceFocusContentEditable}
                 onBlur={(e) =>
                   handleSaveCell(-1, c.key, e.currentTarget.innerText)

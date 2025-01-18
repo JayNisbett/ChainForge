@@ -2005,8 +2005,8 @@ export const getLLMsInPulledInputData = (pulled_data: Dict) => {
   Object.values(pulled_data).forEach((_vs) => {
     const vs = Array.isArray(_vs) ? _vs : [_vs];
     vs.forEach((v) => {
-      if (v?.llm !== undefined && !(v.llm.key in found_llms))
-        found_llms[v.llm.key] = v.llm;
+      if (v?.llm !== undefined && !(v.llm.id in found_llms))
+        found_llms[v.llm.id] = v.llm;
     });
   });
   return Object.values(found_llms);
@@ -2065,11 +2065,11 @@ export const tagMetadataWithLLM = (input_data: LLMResponsesByVarDict) => {
         typeof r === "string" ||
         !r?.llm ||
         typeof r.llm === "string" ||
-        !r.llm.key
+        !r.llm.id
       )
         return r;
       const r_copy = JSON.parse(JSON.stringify(r));
-      r_copy.metavars.__LLM_key = r.llm.key;
+      r_copy.metavars.__LLM_key = r.llm.id;
       return r_copy;
     });
   });
@@ -2089,7 +2089,7 @@ export const extractLLMLookup = (
           ? undefined
           : !r.llm || typeof r.llm === "string"
             ? r.llm
-            : r.llm.key;
+            : r.llm.id;
       if (
         typeof r === "string" ||
         !r.llm ||

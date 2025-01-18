@@ -59,7 +59,7 @@ export const GroupModal = forwardRef<GroupModalRef, GroupModalProps>(
       >
         <Tabs
           value={activeTab}
-          onChange={(value: string | null) => {
+          onTabChange={(value: string | null) => {
             if (value === "group" || value === "flow") {
               setActiveTab(value);
             }
