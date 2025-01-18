@@ -23,7 +23,7 @@ import {
 } from "./utils";
 import StorageCache from "./cache";
 import { UserForcedPrematureExit } from "./errors";
-import { typecastSettingsDict } from "../ModelSettingSchemas";
+import { typecastSettingsDict } from "../components/ai/models/ModelSettingSchemas";
 
 interface _IntermediateLLMResponseType {
   prompt: PromptTemplate;
@@ -130,7 +130,7 @@ export class PromptPipeline {
       query: query ?? {},
       uid: uuid(),
       responses: extracted_resps,
-      raw_response: contains_imgs ? {} : response ?? {}, // don't double-store images
+      raw_response: contains_imgs ? {} : (response ?? {}), // don't double-store images
       llm,
       vars: mergeDicts(info, chat_history?.fill_history) ?? {},
       metavars: mergeDicts(metavars, chat_history?.metavars) ?? {},
@@ -173,24 +173,24 @@ export class PromptPipeline {
     Yields responses as they come in. All LLM calls that yield errors (e.g., 'rate limit' error)
     will yield an individual LLMResponseException, so downstream tasks must check for this exception type.
 
-    By default, for each response successfully collected, this also saves reponses to disk as JSON at the filepath given during init. 
+    By default, for each response successfully collected, this also saves reponses to disk as JSON at the filepath given during init.
     (Very useful for saving money in case something goes awry!)
-    To clear the cached responses, call clear_cached_responses(). 
+    To clear the cached responses, call clear_cached_responses().
 
-    NOTE: The reason we collect, rather than raise, LLMResponseExceptions is because some API calls 
-          may still succeed, even if some fail. We don't want to stop listening to pending API calls, 
-          because we may lose money. Instead, we fail selectively. 
+    NOTE: The reason we collect, rather than raise, LLMResponseExceptions is because some API calls
+          may still succeed, even if some fail. We don't want to stop listening to pending API calls,
+          because we may lose money. Instead, we fail selectively.
 
    * @param vars The 'vars' dict to fill variables in the root prompt template. For instance, for 'Who is {person}?', vars might = { person: ['TJ', 'MJ', 'AD'] }.
    * @param llm The specific LLM model to call. See the LLM enum for supported models.
    * @param n How many generations per prompt sent to the LLM.
    * @param temperature The temperature to use when querying the LLM.
-   * @param llm_params Optional. The model-specific settings to pass into the LLM API call. Varies by LLM. 
+   * @param llm_params Optional. The model-specific settings to pass into the LLM API call. Varies by LLM.
    * @param chat_histories Optional. A list of chat histories, with messages in OpenAI format. When present, calculates the cross product:
    *                                    queries = (prompts) X (chat_histories)
    *                                 to generate individual queries to LLMs. For instance, wish the prompt 'Who is {person}?', 3 values for person,
-   *                                 and 3 different prior chat histories, it will send off 9 queries. 
-   * @yields Yields `LLMResponseObject` if API call succeeds, or `LLMResponseError` if API call fails, for all requests. 
+   *                                 and 3 different prior chat histories, it will send off 9 queries.
+   * @yields Yields `LLMResponseObject` if API call succeeds, or `LLMResponseError` if API call fails, for all requests.
    */
   async *gen_responses(
     vars: Dict,
@@ -253,8 +253,8 @@ export class PromptPipeline {
         const cached_resps: RawLLMResponseObject[] = Array.isArray(cache_bucket)
           ? cache_bucket
           : cache_bucket === undefined
-          ? []
-          : [cache_bucket];
+            ? []
+            : [cache_bucket];
 
         // Check if there's a cached response with the same prompt + (if present) chat history and settings vars:
         let cached_resp: RawLLMResponseObject | undefined;

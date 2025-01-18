@@ -5,13 +5,13 @@ import React, {
   useEffect,
   useContext,
 } from "react";
-import ReactDOM from "react-dom/client";
 import ReactFlow, {
   Controls,
   Background,
   ReactFlowInstance,
   Node,
   Edge,
+  ReactFlowJsonObject,
 } from "reactflow";
 import {
   Button,
@@ -23,7 +23,7 @@ import {
   Loader,
   Tooltip,
 } from "@mantine/core";
-import { useClipboard } from "@mantine/hooks";
+import { useClipboard, useHotkeys } from "@mantine/hooks";
 import { useContextMenu } from "mantine-contextmenu";
 import {
   IconSettings,
@@ -37,39 +37,55 @@ import {
   IconArrowsSplit,
   IconForms,
   IconAbacus,
+  IconLayersSubtract,
+  IconLayersIntersect,
 } from "@tabler/icons-react";
-import RemoveEdge from "./RemoveEdge";
-import TextFieldsNode from "./TextFieldsNode"; // Import a custom node
-import PromptNode from "./PromptNode";
-import CodeEvaluatorNode from "./CodeEvaluatorNode";
-import VisNode from "./VisNode";
-import InspectNode from "./InspectorNode";
-import ScriptNode from "./ScriptNode";
-import { AlertModalContext } from "./AlertModal";
-import ItemsNode from "./ItemsNode";
-import TabularDataNode from "./TabularDataNode";
-import JoinNode from "./JoinNode";
-import SplitNode from "./SplitNode";
-import CommentNode from "./CommentNode";
+import RemoveEdge from "./components/edges/RemoveEdge";
+import TextFieldsNode from "./components/nodes/TextFieldsNode"; // Import a custom node
+import PromptNode from "./components/nodes/PromptNode";
+import CodeEvaluatorNode from "./components/nodes/CodeEvaluatorNode";
+import VisNode from "./components/nodes/VisNode";
+import InspectNode from "./components/nodes/InspectorNode";
+import ScriptNode from "./components/nodes/ScriptNode";
+import { AlertModalContext } from "./components/modals/AlertModal";
+import ItemsNode from "./components/nodes/ItemsNode";
+import TabularDataNode from "./components/nodes/TabularDataNode";
+import JoinNode from "./components/nodes/JoinNode";
+import SplitNode from "./components/nodes/SplitNode";
+import CommentNode from "./components/nodes/CommentNode";
 import GlobalSettingsModal, {
   GlobalSettingsModalRef,
-} from "./GlobalSettingsModal";
-import ExampleFlowsModal, { ExampleFlowsModalRef } from "./ExampleFlowsModal";
-import AreYouSureModal, { AreYouSureModalRef } from "./AreYouSureModal";
-import LLMEvaluatorNode from "./LLMEvalNode";
-import SimpleEvalNode from "./SimpleEvalNode";
+} from "./components/modals/GlobalSettingsModal";
+import ExampleFlowsModal, {
+  ExampleFlowsModalRef,
+} from "./components/modals/ExampleFlowsModal";
+import AreYouSureModal, {
+  AreYouSureModalRef,
+} from "./components/modals/AreYouSureModal";
+import LLMEvaluatorNode from "./components/nodes/LLMEvalNode";
+import SimpleEvalNode from "./components/nodes/SimpleEvalNode";
 import {
   getDefaultModelFormData,
   getDefaultModelSettings,
-} from "./ModelSettingSchemas";
+} from "./components/ai/models/ModelSettingSchemas";
 import { v4 as uuid } from "uuid";
 import LZString from "lz-string";
-import { EXAMPLEFLOW_1 } from "./example_flows";
-import ProjectNode from "./ProjectNode";
-import TaskNode from "./TaskNode";
+import { EXAMPLEFLOW_1 } from "./components/flows/example_flows";
+import ProjectNode from "./components/nodes/ProjectNode";
+import TaskNode from "./components/nodes/TaskNode";
+import { FlowManager } from "./components/FlowManager";
+import { GroupModal, GroupModalRef } from "./components/modals/GroupModal";
+import { AlertContext, AlertProvider } from "./components/AlertProvider";
+import { SelectionActionMenu } from "./components/SelectionActionMenu";
+import { FlowData, Flow } from "./types/flow";
+import GroupNode from "./components/nodes/GroupNode";
+import promptData from "./backend/aiPromptNodeData.json";
+import { addPromptNodesFromData } from "./utils/nodeGenerator";
+import promptCategoriesData from "./backend/aiPromptCategoriesData.json";
+
 // Styling
 import "reactflow/dist/style.css"; // reactflow
-import "./text-fields-node.css"; // project
+import "./styles/text-fields-node.css"; // project
 
 // Lazy loading images
 import "lazysizes";
@@ -77,7 +93,7 @@ import "lazysizes/plugins/attrchange/ls.attrchange";
 
 // State management (from https://reactflow.dev/docs/guides/state-management/)
 import { shallow } from "zustand/shallow";
-import useStore, { StoreHandles, Project } from "./store";
+import useStore, { StoreHandles, Project } from "./store/store";
 import StorageCache from "./backend/cache";
 import { APP_IS_RUNNING_LOCALLY, browserTabIsActive } from "./backend/utils";
 import { Dict, JSONCompatible, LLMSpec } from "./backend/typing";
@@ -97,7 +113,9 @@ import {
   isEdgeChromium,
   isChromium,
 } from "react-device-detect";
-import MultiEvalNode from "./MultiEvalNode";
+import MultiEvalNode from "./components/nodes/MultiEvalNode";
+import { FlowService } from "./services/FlowService";
+import DynamicPromptNode from "./components/nodes/DynamicPromptNode";
 
 const IS_ACCEPTED_BROWSER =
   (isChrome ||
@@ -123,6 +141,7 @@ const selector = (state: StoreHandles) => ({
   resetLLMColors: state.resetLLMColors,
   setAPIKeys: state.setAPIKeys,
   importState: state.importState,
+  selectedNodes: state.selectedNodes,
 });
 
 // The initial LLM to use when new flows are created, or upon first load
@@ -179,6 +198,8 @@ const nodeTypes = {
   processor: CodeEvaluatorNode,
   project: ProjectNode,
   task: TaskNode,
+  groupNode: GroupNode,
+  dynamicprompt: DynamicPromptNode,
 };
 
 const edgeTypes = {
@@ -249,11 +270,81 @@ interface VueUpdateEvent extends CustomEvent {
   };
 }
 
+// Add this helper function to organize prompts by category
+const organizePromptsByCategory = (
+  prompts: any[],
+  categories: { key: number; categoryName: string }[],
+) => {
+  const categoryMap = new Map();
+
+  // Initialize categories
+  categories.forEach((category) => {
+    categoryMap.set(category.key, {
+      ...category,
+      prompts: [],
+    });
+  });
+
+  // Sort prompts into categories
+  prompts.forEach((prompt) => {
+    const category = categoryMap.get(prompt.categoryRef);
+    if (category) {
+      category.prompts.push(prompt);
+    }
+  });
+
+  return Array.from(categoryMap.values());
+};
+
 const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   const setProjects = useStore((state) => state.setProjects);
   const setTasks = useStore((state) => state.setTasks);
   const projects = useStore((state) => state.projects);
   const tasks = useStore((state) => state.tasks);
+
+  // Get nodes, edges, etc. state from the Zustand store first:
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    addNode: addNodeToStore,
+    setNodes,
+    setEdges,
+    resetLLMColors,
+    setAPIKeys,
+    importState,
+    selectedNodes,
+  } = useStore(selector, shallow);
+
+  // Then declare state variables
+  const [currentFlow, setCurrentFlow] = useState<Flow | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [waitingForShare, setWaitingForShare] = useState(false);
+  const [autosavingInterval, setAutosavingInterval] = useState<
+    NodeJS.Timeout | undefined
+  >(undefined);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+
+  // Now we can define resetFlow since setNodes and setEdges are available
+  const resetFlow = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+    setCurrentFlow(null);
+    StorageCache.clear();
+
+    // Reset viewport
+    if (rfInstance) {
+      rfInstance.setViewport({ x: 0, y: 0, zoom: 1 });
+    }
+
+    // Create a new empty flow if none exists
+    if (!currentFlow) {
+      const newFlow = FlowService.createFlow("New Flow", "Empty flow");
+      setCurrentFlow(newFlow);
+    }
+  }, [setNodes, setEdges, rfInstance, currentFlow]);
 
   // Add debugging for initial data
   useEffect(() => {
@@ -294,30 +385,8 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     };
   }, [setProjects, setTasks]);
 
-  // Get nodes, edges, etc. state from the Zustand store:
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    addNode: addNodeToStore,
-    setNodes,
-    setEdges,
-    resetLLMColors,
-    setAPIKeys,
-    importState,
-  } = useStore(selector, shallow);
-
-  // For saving / loading
-  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
-  const [autosavingInterval, setAutosavingInterval] = useState<
-    NodeJS.Timeout | undefined
-  >(undefined);
-
   // For 'share' button
   const clipboard = useClipboard({ timeout: 1500 });
-  const [waitingForShare, setWaitingForShare] = useState(false);
 
   // For modal popup to set global settings like API keys
   const settingsModal = useRef<GlobalSettingsModalRef>(null);
@@ -326,7 +395,7 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   const examplesModal = useRef<ExampleFlowsModalRef>(null);
 
   // For displaying alerts
-  const showAlert = useContext(AlertModalContext);
+  const showAlert = useContext(AlertContext);
 
   // For confirmation popup
   const confirmationModal = useRef<AreYouSureModalRef>(null);
@@ -342,9 +411,6 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   // For Mantine Context Menu forced closing
   // (for some reason the menu doesn't close automatically upon click-off)
   const { hideContextMenu } = useContextMenu();
-
-  // For displaying a pending 'loading' status
-  const [isLoading, setIsLoading] = useState(true);
 
   // Helper
   const getWindowSize = () => ({
@@ -391,10 +457,11 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   const addSimpleEvalNode = () => addNode("simpleEval", "simpleval");
   const addEvalNode = (progLang: string) => {
     let code = "";
-    if (progLang === "python")
+    if (progLang === "python") {
       code = "def evaluate(response):\n  return len(response.text)";
-    else if (progLang === "javascript")
+    } else if (progLang === "javascript") {
       code = "function evaluate(response) {\n  return response.text.length;\n}";
+    }
     addNode("evalNode", "evaluator", { language: progLang, code });
   };
   const addVisNode = () => addNode("visNode", "vis", {});
@@ -423,8 +490,13 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     if (settingsModal && settingsModal.current) settingsModal.current.trigger();
   };
 
-  const handleError = (err: Error | string) => {
-    const msg = typeof err === "string" ? err : err.message;
+  const handleError = (err: unknown) => {
+    const msg =
+      err instanceof Error
+        ? err.message
+        : typeof err === "string"
+          ? err
+          : "An unknown error occurred";
     setIsLoading(false);
     setWaitingForShare(false);
     if (showAlert) showAlert(msg);
@@ -434,7 +506,7 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   /**
    * SAVING / LOADING, IMPORT / EXPORT (from JSON)
    */
-  const downloadJSON = (jsonData: JSONCompatible, filename: string) => {
+  const downloadJSON = (jsonData: any, filename: string) => {
     // Convert JSON object to JSON string
     const jsonString = JSON.stringify(jsonData, null, 2);
 
@@ -462,253 +534,144 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   const saveFlow = useCallback(
     (rf_inst: ReactFlowInstance) => {
       const rf = rf_inst ?? rfInstance;
-      if (!rf) return;
+      if (!rf || !currentFlow) return;
 
-      // NOTE: This currently only saves the front-end state. Cache files
-      // are not pulled or overwritten upon loading from localStorage.
-      const flow = rf.toObject();
-      StorageCache.saveToLocalStorage("chainforge-flow", flow);
+      // Get ReactFlow data
+      const rfData = rf.toObject();
 
-      // Attempt to save the current state of the back-end state,
-      // the StorageCache. (This does LZ compression to save space.)
+      // Convert to our Flow data structure
+      const flowData: FlowData = {
+        nodes: rfData.nodes,
+        edges: rfData.edges,
+        viewport: rfData.viewport,
+        groups: currentFlow.data.groups || [],
+      };
+
+      // Save to FlowService
+      FlowService.updateFlow(currentFlow.id, {
+        ...currentFlow,
+        data: flowData,
+        cache: StorageCache.getAllMatching((key) => key.startsWith("r.")),
+      });
+
+      // Also save to localStorage as backup
+      StorageCache.saveToLocalStorage("chainforge-flow", flowData);
       StorageCache.saveToLocalStorage("chainforge-state");
 
       console.log("Flow saved!");
     },
-    [rfInstance],
+    [rfInstance, currentFlow],
   );
 
-  // Triggered when user confirms 'New Flow' button
-  const resetFlow = useCallback(() => {
-    resetLLMColors();
-
-    const uid = (id: string) => `${id}-${Date.now()}`;
-    const starting_nodes = [
-      {
-        id: uid("prompt"),
-        type: "prompt",
-        data: {
-          prompt: "",
-          n: 1,
-          llms: [INITIAL_LLM()],
-        },
-        position: { x: 450, y: 200 },
-      },
-      {
-        id: uid("textfields"),
-        type: "textfields",
-        data: {},
-        position: { x: 80, y: 270 },
-      },
-    ];
-
-    setNodes(starting_nodes);
-    setEdges([]);
-    if (rfInstance) rfInstance.setViewport({ x: 200, y: 80, zoom: 1 });
-  }, [setNodes, setEdges, resetLLMColors, rfInstance]);
-
-  const loadFlow = async (flow?: Dict, rf_inst?: ReactFlowInstance | null) => {
-    if (flow === undefined) return;
-    if (rf_inst) {
-      if (flow.viewport)
-        rf_inst.setViewport({
-          x: flow.viewport.x || 0,
-          y: flow.viewport.y || 0,
-          zoom: flow.viewport.zoom || 1,
-        });
-      else rf_inst.setViewport({ x: 0, y: 0, zoom: 1 });
-    }
-    resetLLMColors();
-
-    // First, clear the ReactFlow state entirely
-    // NOTE: We need to do this so it forgets any node/edge ids, which might have cross-over in the loaded flow.
-    setNodes([]);
-    setEdges([]);
-
-    // After a delay, load in the new state.
-    setTimeout(() => {
-      setNodes(flow.nodes || []);
-      setEdges(flow.edges || []);
-
-      // Save flow that user loaded to autosave cache, in case they refresh the browser
-      StorageCache.saveToLocalStorage("chainforge-flow", flow);
-
-      // Cancel loading spinner
-      setIsLoading(false);
-    }, 10);
-
-    // Start auto-saving, if it's not already enabled
-    if (rf_inst) initAutosaving(rf_inst);
-  };
-
-  const importGlobalStateFromCache = useCallback(() => {
-    importState(StorageCache.getAllMatching((key) => key.startsWith("r.")));
-  }, [importState]);
-
-  const autosavedFlowExists = () => {
-    return window.localStorage.getItem("chainforge-flow") !== null;
-  };
-  const loadFlowFromAutosave = async (rf_inst: ReactFlowInstance) => {
-    const saved_flow = StorageCache.loadFromLocalStorage(
-      "chainforge-flow",
-      false,
-    ) as Dict;
-    if (saved_flow) {
-      StorageCache.loadFromLocalStorage("chainforge-state");
-      importGlobalStateFromCache();
-      loadFlow(saved_flow, rf_inst);
-    }
-  };
-
-  // Export / Import (from JSON)
-  const exportFlow = useCallback(() => {
-    if (!rfInstance) return;
-
-    // We first get the data of the flow
-    const flow = rfInstance.toObject();
-
-    // Then we grab all the relevant cache files from the backend
-    const all_node_ids = nodes.map((n) => n.id);
-    exportCache(all_node_ids)
-      .then(function (cacheData) {
-        // Now we append the cache file data to the flow
-        const flow_and_cache = {
-          flow,
-          cache: cacheData,
-        };
-
-        // Save!
-        // @ts-expect-error The exported RF instance is JSON compatible but TypeScript won't read it as such.
-        downloadJSON(flow_and_cache, `flow-${Date.now()}.cforge`);
-      })
-      .catch(handleError);
-  }, [rfInstance, nodes, handleError]);
-
-  // Import data to the cache stored on the local filesystem (in backend)
-  const handleImportCache = useCallback(
-    (cache_data: Dict<Dict>) =>
-      importCache(cache_data)
-        .then(importGlobalStateFromCache)
-        .catch(handleError),
-    [handleError, importGlobalStateFromCache],
+  // Create new flow
+  const createNewFlow = useCallback(
+    async (name: string, description?: string) => {
+      const newFlow = FlowService.createFlow(name, description);
+      setCurrentFlow(newFlow);
+      resetFlow(); // Your existing reset flow logic
+    },
+    [resetFlow],
   );
 
-  const importFlowFromJSON = useCallback(
-    (flowJSON: Dict, rf_inst?: ReactFlowInstance | null) => {
-      const rf = rf_inst ?? rfInstance;
+  // Load flow
+  const loadFlow = useCallback(
+    (flowId: string) => {
+      const flows = FlowService.getFlows();
+      const flow = flows.find((f) => f.id === flowId);
+      if (!flow) return;
 
-      setIsLoading(true);
+      setCurrentFlow(flow);
+      if (flow.data) {
+        setNodes(flow.data.nodes);
+        setEdges(flow.data.edges);
+        if (flow.data.viewport && rfInstance) {
+          rfInstance.setViewport(flow.data.viewport);
+        }
+      }
 
-      // Detect if there's no cache data
-      if (!flowJSON.cache) {
-        // Support for loading old flows w/o cache data:
-        loadFlow(flowJSON, rf);
+      // Load cache if exists
+      if (flow.cache) {
+        StorageCache.store("cache", flow.cache);
+      }
+    },
+    [setNodes, setEdges, rfInstance],
+  );
+
+  // Create snapshot
+  const createSnapshot = useCallback(
+    (name?: string, description?: string) => {
+      if (!currentFlow) {
+        console.error("No current flow to snapshot");
         return;
       }
 
-      // Then we need to extract the JSON of the flow vs the cache data
-      const flow = flowJSON.flow;
-      const cache = flowJSON.cache;
+      // Get current flow state
+      if (!rfInstance) {
+        console.error("No ReactFlow instance available");
+        return;
+      }
 
-      // We need to send the cache data to the backend first,
-      // before we can load the flow itself...
-      handleImportCache(cache)
-        .then(() => {
-          // We load the ReactFlow instance last
-          loadFlow(flow, rf);
-        })
-        .catch((err) => {
-          // On an error, still try to load the flow itself:
-          handleError(
-            "Error encountered when importing cache data:" +
-              err.message +
-              "\n\nTrying to load flow regardless...",
-          );
-          loadFlow(flow, rf);
-        });
+      // Update the current flow before creating snapshot
+      const flowData = rfInstance.toObject();
+      const updatedFlow = FlowService.updateFlow(currentFlow.id, {
+        data: flowData,
+        cache: StorageCache.getAllMatching((key) => key.startsWith("r.")),
+      });
+
+      // Create snapshot from updated flow
+      try {
+        const snapshot = FlowService.createSnapshot(
+          updatedFlow.id,
+          name || `Snapshot ${new Date().toLocaleString()}`,
+          description,
+        );
+        console.log("Created snapshot:", snapshot);
+        if (showAlert) showAlert("Snapshot created successfully");
+      } catch (err) {
+        console.error("Failed to create snapshot:", err);
+        if (showAlert) showAlert("Failed to create snapshot");
+      }
     },
-    [rfInstance],
+    [currentFlow, rfInstance, showAlert],
   );
 
-  // Import a ChainForge flow from a file
-  const importFlowFromFile = async () => {
-    // Create an input element with type "file" and accept only JSON files
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".cforge, .json";
+  // Restore snapshot
+  const restoreSnapshot = useCallback(
+    (snapshotId: string) => {
+      try {
+        console.log("Restoring snapshot:", snapshotId);
+        const updatedFlow = FlowService.restoreSnapshot(snapshotId);
+        console.log("Flow restored:", updatedFlow);
 
-    // Handle file selection
-    input.addEventListener(
-      "change",
-      // @ts-expect-error The event is correctly typed here, but for some reason TS doesn't pick up on it.
-      function (event: React.ChangeEvent<HTMLInputElement>) {
-        // Start loading spinner
-        setIsLoading(false);
+        setCurrentFlow(updatedFlow);
 
-        const files = event.target.files;
-        if (!files || typeof files !== "object" || files.length === 0) {
-          console.error("No files found to load.");
-          return;
+        // Apply the restored flow data
+        if (updatedFlow.data) {
+          setNodes(updatedFlow.data.nodes || []);
+          setEdges(updatedFlow.data.edges || []);
+          if (updatedFlow.data.viewport && rfInstance) {
+            rfInstance.setViewport(updatedFlow.data.viewport);
+          }
         }
 
-        const file = files[0];
-        const reader = new window.FileReader();
+        // Restore cache if exists
+        if (updatedFlow.cache) {
+          StorageCache.clear(); // Clear existing cache
+          Object.entries(updatedFlow.cache).forEach(([key, value]) => {
+            StorageCache.store(key, value);
+          });
+        }
 
-        // Handle file load event
-        reader.addEventListener("load", function () {
-          try {
-            if (typeof reader.result !== "string")
-              throw new Error(
-                "File could not be read: Unknown format or empty.",
-              );
+        if (showAlert) showAlert("Snapshot restored successfully");
+      } catch (err) {
+        console.error("Failed to restore snapshot:", err);
+        if (showAlert) showAlert("Failed to restore snapshot");
+      }
+    },
+    [rfInstance, setNodes, setEdges, showAlert],
+  );
 
-            // We try to parse the JSON response
-            const flow_and_cache = JSON.parse(reader.result);
-
-            // Import it to React Flow and import cache data on the backend
-            importFlowFromJSON(flow_and_cache);
-          } catch (error) {
-            handleError(error as Error);
-          }
-        });
-
-        // Read the selected file as text
-        reader.readAsText(file);
-      },
-    );
-
-    // Trigger the file selector
-    input.click();
-  };
-
-  // Downloads the selected OpenAI eval file (preconverted to a .cforge flow)
-  const importFlowFromOpenAIEval = (evalname: string) => {
-    setIsLoading(true);
-
-    fetchOpenAIEval(evalname).then(importFlowFromJSON).catch(handleError);
-  };
-
-  // Load flow from examples modal
-  const onSelectExampleFlow = (name: string, example_category?: string) => {
-    // Trigger the 'loading' modal
-    setIsLoading(true);
-
-    // Detect a special category of the example flow, and use the right loader for it:
-    if (example_category === "openai-eval") {
-      importFlowFromOpenAIEval(name);
-      return;
-    }
-
-    // Fetch the example flow data from the backend
-    fetchExampleFlow(name)
-      .then(function (flowJSON) {
-        // We have the data, import it:
-        importFlowFromJSON(flowJSON);
-      })
-      .catch(handleError);
-  };
-
-  // When the user clicks the 'New Flow' button
+  // Triggered when user confirms 'New Flow' button
   const onClickNewFlow = useCallback(() => {
     setConfirmationDialogProps({
       title: "Create a new flow",
@@ -825,41 +788,43 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   ]);
 
   // Initialize auto-saving
-  const initAutosaving = (rf_inst: ReactFlowInstance) => {
-    if (autosavingInterval !== undefined) return; // autosaving interval already set
-    console.log("Init autosaving");
+  const initAutosaving = useCallback(
+    (rf_inst: ReactFlowInstance) => {
+      if (autosavingInterval !== undefined) return; // autosaving interval already set
+      console.log("Init autosaving");
 
-    // Autosave the flow to localStorage every minute:
-    const interv = setInterval(() => {
-      // Check the visibility of the browser tab --if it's not visible, don't autosave
-      if (!browserTabIsActive()) return;
+      // Autosave the flow every minute:
+      const interv = setInterval(() => {
+        // Check the visibility of the browser tab
+        if (!browserTabIsActive()) return;
 
-      // Start a timer, in case the saving takes a long time
-      const startTime = Date.now();
+        // Start a timer, in case the saving takes a long time
+        const startTime = Date.now();
 
-      // Save the flow to localStorage
-      saveFlow(rf_inst);
+        // Save the flow
+        saveFlow(rf_inst);
 
-      // Check how long the save took
-      const duration = Date.now() - startTime;
-      if (duration > 1500) {
-        // If the operation took longer than 1.5 seconds, that's not good.
-        // Although this function is called async inside setInterval,
-        // calls to localStorage block the UI in JavaScript, freezing the screen.
-        // We smart-disable autosaving here when we detect it's starting the freeze the UI:
-        console.warn(
-          "Autosaving disabled. The time required to save to localStorage exceeds 1 second. This can happen when there's a lot of data in your flow. Make sure to export frequently to save your work.",
-        );
-        clearInterval(interv);
-        setAutosavingInterval(undefined);
-      }
-    }, 60000); // 60000 milliseconds = 1 minute
-    setAutosavingInterval(interv);
-  };
+        // Check how long the save took
+        const duration = Date.now() - startTime;
+        if (duration > 1500) {
+          // If the operation took longer than 1.5 seconds, disable autosaving
+          console.warn(
+            "Autosaving disabled. The time required to save exceeds 1.5 seconds.",
+          );
+          clearInterval(interv);
+          setAutosavingInterval(undefined);
+        }
+      }, 60000); // 60000 milliseconds = 1 minute
+
+      setAutosavingInterval(interv);
+    },
+    [saveFlow, autosavingInterval],
+  );
 
   // Run once upon ReactFlow initialization
   const onInit = (rf_inst: ReactFlowInstance) => {
     setRfInstance(rf_inst);
+    initAutosaving(rf_inst);
 
     if (IS_RUNNING_LOCALLY) {
       // If we're running locally, try to fetch API keys from Python os.environ variables in the locally running Flask backend:
@@ -914,7 +879,7 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
 
     // Attempt to load an autosaved flow, if one exists:
     //! if (autosavedFlowExists()) loadFlowFromAutosave(rf_inst);
-    //!else {
+    //! else {
     // Load an interesting default starting flow for new users
     importFlowFromJSON(EXAMPLEFLOW_1, rf_inst);
 
@@ -933,48 +898,292 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     };
   }, []);
 
-  if (!IS_ACCEPTED_BROWSER) {
-    return (
-      <Box maw={600} mx="auto" mt="40px">
-        <Text m="xl" size={"11pt"}>
-          {"We're sorry, but it seems like "}
-          {isMobile
-            ? "you are viewing ChainForge on a mobile device"
-            : "your current browser isn't supported by the current version of ChainForge"}{" "}
-          😔. We want to provide you with the best experience possible, so we
-          recommend {isMobile ? "viewing ChainForge on a desktop browser" : ""}{" "}
-          using one of our supported browsers listed below:
-        </Text>
-        <List m="xl" size={"11pt"}>
-          <List.Item>Google Chrome</List.Item>
-          <List.Item>Mozilla Firefox</List.Item>
-          <List.Item>Microsoft Edge (Chromium)</List.Item>
-          <List.Item>Brave</List.Item>
-        </List>
+  // Initialize default flows on app start
+  useEffect(() => {
+    FlowService.initializeDefaultFlows();
+  }, []);
 
-        <Text m="xl" size={"11pt"}>
-          These browsers offer enhanced compatibility with ChainForge&apos;s
-          features. Don&apos;t worry, though! We&apos;re working to expand our
-          browser support to ensure everyone can enjoy our platform. 😊
-        </Text>
-        <Text m="xl" size={"11pt"}>
-          If you have any questions or need assistance, please don&apos;t
-          hesitate to reach out on our{" "}
-          <a href="https://github.com/ianarawjo/ChainForge/issues">GitHub</a> by{" "}
-          <a href="https://github.com/ianarawjo/ChainForge/issues">
-            opening an Issue.
-          </a>
-          &nbsp; (If you&apos;re a web developer, consider forking our
-          repository and making a{" "}
-          <a href="https://github.com/ianarawjo/ChainForge/pulls">
-            Pull Request
-          </a>{" "}
-          to support your particular browser.)
-        </Text>
-      </Box>
+  // Update the importFlowFromJSON function to set the current flow
+  const importFlowFromJSON = useCallback(
+    (flowData: any, rf_inst: ReactFlowInstance) => {
+      try {
+        // Create a new flow from the imported data
+        const newFlow = FlowService.createFlow(
+          "Imported Flow",
+          "Imported from JSON",
+        );
+
+        // Convert ReactFlow data to our Flow data structure
+        const flowDataFormatted: FlowData = {
+          nodes: flowData.flow.nodes,
+          edges: flowData.flow.edges,
+          viewport: flowData.flow.viewport || { x: 0, y: 0, zoom: 1 },
+          groups: flowData.flow.groups || [],
+        };
+
+        newFlow.data = flowDataFormatted;
+        newFlow.cache = flowData.cache;
+
+        setCurrentFlow(newFlow);
+        FlowService.updateFlow(newFlow.id, newFlow);
+
+        // Update the ReactFlow instance
+        setNodes(flowDataFormatted.nodes);
+        setEdges(flowDataFormatted.edges);
+        if (rf_inst && flowDataFormatted.viewport) {
+          rf_inst.setViewport(flowDataFormatted.viewport);
+        }
+      } catch (err) {
+        handleError(err);
+      }
+    },
+    [setNodes, setEdges, handleError, setCurrentFlow],
+  );
+
+  // Add initialization of default flow on component mount
+  useEffect(() => {
+    FlowService.initializeDefaultFlows();
+    const flows = FlowService.getFlows();
+    if (flows.length > 0 && !currentFlow) {
+      setCurrentFlow(flows[0]);
+      if (flows[0].data) {
+        setNodes(flows[0].data.nodes || []);
+        setEdges(flows[0].data.edges || []);
+        if (flows[0].data.viewport && rfInstance) {
+          rfInstance.setViewport(flows[0].data.viewport);
+        }
+      }
+    }
+  }, []);
+
+  // Add this with other callback functions
+  const onSelectExampleFlow = useCallback(
+    async (flowId: string) => {
+      try {
+        const flowData = await fetchExampleFlow(flowId);
+        if (flowData && rfInstance) {
+          importFlowFromJSON(flowData, rfInstance);
+        }
+      } catch (err) {
+        handleError(err);
+      }
+    },
+    [rfInstance, importFlowFromJSON],
+  );
+
+  // Add these with other flow-related functions
+  const exportFlow = useCallback(() => {
+    if (!rfInstance || !currentFlow) return;
+
+    const flow = rfInstance.toObject();
+    const exportData = {
+      flow,
+      cache: StorageCache.getAllMatching((key) => key.startsWith("r.")),
+    };
+
+    downloadJSON(
+      exportData,
+      `chainforge-flow-${currentFlow.name}-${Date.now()}.json`,
     );
-  } else
-    return (
+  }, [rfInstance, currentFlow]);
+
+  const importFlowFromFile = useCallback(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file || !rfInstance) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const jsonData = JSON.parse(event.target?.result as string);
+          importFlowFromJSON(jsonData, rfInstance);
+        } catch (err) {
+          handleError(err);
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    input.click();
+  }, [rfInstance, importFlowFromJSON]);
+
+  useEffect(() => {
+    // Force migration of flow IDs to handle any remaining duplicates
+    FlowService.forceMigration();
+  }, []);
+
+  // Add ref for group modal
+  const groupModal = useRef<GroupModalRef>(null);
+
+  // Add handlers for group/flow creation
+  const handleCreateGroup = useCallback(
+    (name: string, description?: string) => {
+      if (!showAlert) return;
+      if (!Array.isArray(nodes)) {
+        console.error("Nodes is not an array");
+        return;
+      }
+      if (selectedNodes.length < 2) {
+        showAlert("Select at least 2 nodes to create a group");
+        return;
+      }
+
+      // Create the group
+      const groupId = useStore.getState().createGroup(name, description);
+
+      // Get information about grouped nodes
+      const groupedNodes = nodes.filter((n) =>
+        selectedNodes.includes(typeof n.id === "string" ? n.id : String(n.id)),
+      );
+
+      const nodeConnections = Array.isArray(edges)
+        ? edges.filter(
+            (e) =>
+              selectedNodes.includes(
+                typeof e.source === "string" ? e.source : String(e.source),
+              ) ||
+              selectedNodes.includes(
+                typeof e.target === "string" ? e.target : String(e.target),
+              ),
+          )
+        : [];
+
+      // Calculate center position of selected nodes
+      const centerX =
+        groupedNodes.reduce((sum, node) => sum + node.position.x, 0) /
+        groupedNodes.length;
+      const centerY =
+        groupedNodes.reduce((sum, node) => sum + node.position.y, 0) /
+        groupedNodes.length;
+
+      // Clear selection before modifying nodes
+      useStore.getState().setSelectedNodes([]);
+
+      // Remove selected nodes and their edges
+      setNodes((currentNodes: Node[]) =>
+        currentNodes.filter((n) => !selectedNodes.includes(n.id)),
+      );
+
+      setEdges((currentEdges: Edge[]) =>
+        currentEdges.filter(
+          (e) =>
+            !selectedNodes.includes(e.source) &&
+            !selectedNodes.includes(e.target),
+        ),
+      );
+
+      // Add group node
+      addNode(`groupnode-${groupId}`, "groupNode", {
+        id: `groupnode-${groupId}`,
+        type: "groupNode",
+        position: { x: centerX, y: centerY },
+        data: {
+          name,
+          description,
+          groupId,
+          nodes: groupedNodes.map((n) => ({
+            id: n.id,
+            type: n.type,
+            name: n.data?.name || n.type,
+          })),
+          connections: nodeConnections.map((e) => ({
+            source: e.source,
+            target: e.target,
+            sourceHandle: e.sourceHandle,
+            targetHandle: e.targetHandle,
+          })),
+          isCollapsed: false,
+        },
+        selected: false,
+      } as Node);
+    },
+    [selectedNodes, nodes, edges, addNode, setNodes, setEdges, showAlert],
+  );
+
+  const handleCreateFlowFromSelection = useCallback(
+    (name: string, description?: string) => {
+      if (!showAlert) return;
+      if (selectedNodes.length < 2) {
+        showAlert("Select at least 2 nodes to create a flow");
+        return;
+      }
+
+      // Create new flow from selection
+      const newFlowId = useStore
+        .getState()
+        .createFlowFromSelection(name, description);
+
+      // Create a group node that references this flow
+      addNode("groupNode", "group", {
+        name,
+        description,
+        referencedFlowId: newFlowId,
+        isCollapsed: false,
+      });
+    },
+    [selectedNodes, addNode, showAlert],
+  );
+
+  // Add keyboard shortcuts
+  useHotkeys([
+    [
+      "g",
+      () => {
+        if (selectedNodes.length >= 2) {
+          groupModal.current?.trigger();
+        }
+      },
+    ],
+    [
+      "escape",
+      () => {
+        useStore.getState().setSelectedGroup(null);
+        useStore.getState().setSelectedNodes([]);
+      },
+    ],
+  ]);
+
+  // Add handler for opening group modal from selection menu
+  const handleSelectionGroupAction = useCallback(() => {
+    groupModal.current?.trigger();
+  }, []);
+
+  const syncSelectedNodes = useStore((state) => state.syncSelectedNodes);
+
+  useEffect(() => {
+    // Sync selected nodes whenever nodes change
+    syncSelectedNodes();
+  }, [nodes, syncSelectedNodes]);
+
+  // Add this with the other node addition functions
+  const addDynamicPromptNode = (promptData: any) => {
+    addNode("dynamicPromptNode", "dynamicprompt", {
+      _id: promptData._id,
+      title: promptData.title || "Dynamic Prompt",
+      categoryRef: promptData.categoryRef,
+      fields: promptData.fields.map((field: any) => ({
+        ...field,
+        value: field.defaultValue || field.value || "",
+      })),
+      outputFormat: promptData.outputFormat,
+      displayButton: promptData.displayButton,
+      stream: promptData.stream,
+    });
+  };
+
+  // Add a function to load all prompts
+  const loadPromptNodes = () => {
+    if (promptData.status && Array.isArray(promptData.statusText)) {
+      addPromptNodesFromData(promptData.statusText, addNode);
+    }
+  };
+
+  return (
+    <AlertProvider>
       <div>
         <GlobalSettingsModal ref={settingsModal} />
         <LoadingOverlay visible={isLoading} overlayBlur={1} />
@@ -1030,6 +1239,7 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
             >
               <Background color="#999" gap={16} />
               <Controls showZoom={true} />
+              <SelectionActionMenu onCreateGroup={handleSelectionGroupAction} />
             </ReactFlow>
           </div>
         </div>
@@ -1038,6 +1248,13 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
           id="custom-controls"
           style={{ position: "fixed", left: "10px", top: "10px", zIndex: 8 }}
         >
+          <FlowManager
+            currentFlow={currentFlow}
+            onCreateFlow={createNewFlow}
+            onLoadFlow={loadFlow}
+            onCreateSnapshot={createSnapshot}
+            onRestoreSnapshot={restoreSnapshot}
+          />
           <Menu
             transitionProps={{ transition: "pop-top-left" }}
             position="top-start"
@@ -1234,6 +1451,74 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
               ) : (
                 <></>
               )}
+              <Menu.Label>Groups</Menu.Label>
+              <Menu.Item
+                icon={<IconLayersSubtract size={14} />}
+                onClick={() => {
+                  if (!showAlert) return;
+                  if (selectedNodes.length < 2) {
+                    showAlert("Select at least 2 nodes to create a group");
+                    return;
+                  }
+                  groupModal.current?.trigger();
+                }}
+              >
+                Create Group/Flow from Selection
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Label>Dynamic Prompts</Menu.Label>
+              {promptData.status && promptCategoriesData.status ? (
+                organizePromptsByCategory(
+                  promptData.statusText,
+                  promptCategoriesData.statusText,
+                ).map((category) => (
+                  <Menu key={category.key}>
+                    <Menu.Target>
+                      <Text
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          padding: "8px",
+                          fontSize: "14px",
+                          "&:hover": {
+                            backgroundColor: "#f8f9fa",
+                          },
+                        }}
+                      >
+                        <IconForms size="14pt" style={{ marginRight: "8px" }} />
+                        {category.categoryName}
+                      </Text>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {category.prompts.map((prompt) => (
+                        <MenuTooltip
+                          key={prompt._id}
+                          label={`${prompt.title}: ${
+                            prompt.fields[0]?.placeHolder ||
+                            "Create a new prompt"
+                          }`}
+                        >
+                          <Menu.Item
+                            onClick={() => {
+                              addDynamicPromptNode(prompt);
+                            }}
+                          >
+                            {prompt.title}
+                          </Menu.Item>
+                        </MenuTooltip>
+                      ))}
+                      {category.prompts.length === 0 && (
+                        <Menu.Item disabled>
+                          No prompts in this category
+                        </Menu.Item>
+                      )}
+                    </Menu.Dropdown>
+                  </Menu>
+                ))
+              ) : (
+                <Menu.Item disabled>No dynamic prompts available</Menu.Item>
+              )}
             </Menu.Dropdown>
           </Menu>
           <Button
@@ -1332,7 +1617,13 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
             Send us feedback
           </a>
         </div>
+        <GroupModal
+          ref={groupModal}
+          onCreateGroup={handleCreateGroup}
+          onCreateFlow={handleCreateFlowFromSelection}
+        />
       </div>
-    );
+    </AlertProvider>
+  );
 };
 export default App;

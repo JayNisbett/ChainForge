@@ -1,5 +1,7 @@
 import React from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import { MantineProvider } from "@mantine/core";
+import { AlertProvider } from "./components/AlertProvider";
 import App from "./App";
 
 interface MountOptions {
@@ -19,11 +21,15 @@ const mount = async (
 ) => {
   console.log("Bootstrap mount called with:", { initialPath, initialData });
 
-  const root = ReactDOM.createRoot(el);
+  const root = createRoot(el);
 
   root.render(
     <React.StrictMode>
-      <App initialData={initialData} />
+      <MantineProvider>
+        <AlertProvider>
+          <App initialData={initialData} />
+        </AlertProvider>
+      </MantineProvider>
     </React.StrictMode>,
   );
 

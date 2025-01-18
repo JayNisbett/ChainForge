@@ -619,8 +619,8 @@ export async function countQueries(
             )
               ? cache_bucket
               : cache_bucket === undefined
-              ? []
-              : [cache_bucket];
+                ? []
+                : [cache_bucket];
 
             let found_resp = false;
             for (const cached_resp of cached_resps) {
@@ -1123,7 +1123,7 @@ export async function executepy(
   executor?: "flask" | "pyodide",
 ): Promise<EvaluatedResponsesResults> {
   // Determine where we can execute Python
-  executor = APP_IS_RUNNING_LOCALLY() ? executor ?? "flask" : "pyodide";
+  executor = APP_IS_RUNNING_LOCALLY() ? (executor ?? "flask") : "pyodide";
 
   let exec_response: Dict = {};
 

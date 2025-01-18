@@ -1,0 +1,57 @@
+{
+  "status": true,
+  "statusText": [
+    {
+      "key": 0,
+      "categoryName": "Marketing"
+    },
+    {
+      "key": 1,
+      "categoryName": "Create Task"
+    },
+    {
+      "key": 2,
+      "categoryName": "Sales"
+    },
+    {
+      "key": 3,
+      "categoryName": "Email"
+    },
+    {
+      "key": 4,
+      "categoryName": "SEO"
+    },
+    {
+      "key": 5,
+      "categoryName": "Services"
+    },
+    {
+      "key": 6,
+      "categoryName": "Project"
+    },
+    {
+      "key": 7,
+      "categoryName": "Blog"
+    },
+    {
+      "categoryName": "Development",
+      "key": 8
+    },
+    {
+      "key": 9,
+      "categoryName": "Advertisement"
+    },
+    {
+      "key": 10,
+      "categoryName": "Academic"
+    },
+    {
+      "key": 11,
+      "categoryName": "Business"
+    },
+    {
+      "key": 12,
+      "categoryName": "Customer Service"
+    }
+  ]
+}

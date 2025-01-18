@@ -49,7 +49,6 @@ import {
 } from "@mirai73/bedrock-fm";
 import StorageCache from "./cache";
 import Compressor from "compressorjs";
-import { Models } from "@mirai73/bedrock-fm/lib/bedrock";
 
 const ANTHROPIC_HUMAN_PROMPT = "\n\nHuman:";
 const ANTHROPIC_AI_PROMPT = "\n\nAssistant:";
@@ -420,7 +419,7 @@ export async function call_azure_openai(
   n = 1,
   temperature = 1.0,
   params?: Dict,
-  should_cancel?: () => boolean,
+  should_cancel?: () => boolean /* eslint-disable-line @typescript-eslint/no-unused-vars */,
 ): Promise<[Dict, Dict]> {
   if (!AZURE_OPENAI_KEY)
     throw new Error(
@@ -2018,7 +2017,7 @@ export const stripLLMDetailsFromResponses = (
 ): LLMResponse[] =>
   resps.map((r) => ({
     ...r,
-    llm: typeof r?.llm === "string" ? r?.llm : r?.llm?.name ?? "undefined",
+    llm: typeof r?.llm === "string" ? r?.llm : (r?.llm?.name ?? "undefined"),
   }));
 
 // NOTE: The typing is purposefully general since we are trying to cast to an expected format.
@@ -2089,8 +2088,8 @@ export const extractLLMLookup = (
         typeof r === "string"
           ? undefined
           : !r.llm || typeof r.llm === "string"
-          ? r.llm
-          : r.llm.key;
+            ? r.llm
+            : r.llm.key;
       if (
         typeof r === "string" ||
         !r.llm ||

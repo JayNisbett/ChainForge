@@ -1,46 +1,92 @@
 .project-node {
-  min-width: 250px;
+  min-width: 290px;
+  width: 290px;
   background: white;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  border: 1px solid #999;
 }
 
 .project-node-content {
-  padding: 16px;
+  padding: 10px;
 }
 
 .project-select {
-  margin-bottom: 16px;
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .attributes-container {
-  border-top: 1px solid #e0e0e0;
-  padding-top: 16px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 8px;
+  border: 1px solid #e9ecef;
 }
 
 .attributes-title {
-  margin-bottom: 12px;
-  color: #666;
+  margin-bottom: 8px;
+  color: #495057;
+  font-weight: 600;
 }
 
-.attribute-handle-wrapper {
+.attribute-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin: 8px 0;
   padding: 4px 8px;
-  background: #f5f5f5;
+  margin: 2px 0;
   border-radius: 4px;
+  position: relative;
+  transition: background-color 0.2s;
 }
 
-.attribute-label {
-  color: #333;
-  font-size: 0.9em;
+.attribute-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.attribute-name {
+  width: 100px;
+  color: #495057;
+  font-family: var(--monofont);
+  font-size: 11px;
+}
+
+.attribute-value {
+  flex: 1;
+  color: #228be6;
+  margin: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--monofont);
+  font-size: 11px;
+}
+
+.required {
+  color: #fa5252;
+  margin-left: 2px;
 }
 
 .attribute-handle {
-  width: 10px;
-  height: 10px;
-  background: #666;
-  border-radius: 50%;
+  width: 8px !important;
+  height: 8px !important;
+  background: #adb5bd !important;
+  border: 2px solid white !important;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: crosshair;
+}
+
+.attribute-row:hover .attribute-handle {
+  opacity: 1;
+}
+
+.grouped-handle {
+  width: 12px !important;
+  height: 12px !important;
+  background: #228be6 !important;
+  border: 2px solid white !important;
+  opacity: 1 !important;
+}
+
+.grouped-handle:hover {
+  background: #1c7ed6 !important;
 }
