@@ -12,6 +12,7 @@ import {
   IconLayersSubtract,
   IconSettingsAutomation,
 } from "@tabler/icons-react";
+
 import MenuTooltip from "./MenuToolTip";
 import promptData from "../../backend/aiPromptNodeData.json";
 import promptCategoriesData from "../../backend/aiPromptCategoriesData.json";
@@ -21,39 +22,44 @@ import { GroupModalRef } from "../modals/GroupModal";
 import { useStore } from "../../store/store";
 import { PromptData } from "../../types/prompt";
 import { useNodeCreation } from "../../hooks/useNodeCreation";
+import { IS_RUNNING_LOCALLY } from "../../utils/app";
 const MainMenu: React.FC = () => {
   const showAlert = useContext(AlertContext);
   const groupModal = useRef<GroupModalRef>(null);
   const selectedNodes = useStore((state) => state.selectedNodes);
   const rfInstance = useStore((state) => state.rfInstance);
+  const addNodeToStore = useStore((state) => state.addNode);
   const {
+    addTextFieldsNode,
     addProjectNode,
     addTaskNode,
-    addTextFieldsNode,
-    addItemsNode,
-    addTabularDataNode,
     addPromptNode,
+    addChatTurnNode,
+    addProcessorNode,
+    addLLMEvalNode,
     addSimpleEvalNode,
-    addLLMNode,
-    addCodeEvaluatorNode,
-    addLLMEvaluatorNode,
+    addEvalNode,
     addMultiEvalNode,
     addVisNode,
     addInspectNode,
     addScriptNode,
+    addItemsNode,
+    addTabularDataNode,
+    addCommentNode,
     addJoinNode,
     addSplitNode,
     addGroupNode,
     addDynamicPromptNode,
+    organizePromptsByCategory,
   } = useNodeCreation(rfInstance);
 
-  // Add a function to load all prompts
+  /* // Add a function to load all prompts
   const loadPromptNodes = () => {
     if (promptData.status && Array.isArray(promptData.statusText)) {
       const typedPromptData = promptData.statusText as PromptData[];
       addPromptNodesFromData(typedPromptData, addNode);
     }
-  };
+  }; */
 
   return (
     <>

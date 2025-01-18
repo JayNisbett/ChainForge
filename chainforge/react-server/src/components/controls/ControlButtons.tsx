@@ -6,7 +6,7 @@ import CreateNewFlowButton from "../buttons/CreateFlow";
 import ExampleFlowButton from "../buttons/ExampleFlow";
 import { FlowManager } from "../FlowManager";
 import MainMenu from "../menu/MainMenu";
-import { Flow } from "../types/flow";
+import { Flow } from "../../types/flow";
 
 interface ControlButtonsProps {
   onExport: () => void;
@@ -36,7 +36,7 @@ export const ControlButtons: React.FC<ControlButtonsProps> = ({
         style={{ position: "fixed", left: "10px", top: "10px", zIndex: 8 }}
       >
         <FlowManager
-          currentFlow={currentFlow}
+          currentFlow={currentFlow || null}
           onCreateFlow={onCreateFlow}
           onLoadFlow={onLoadFlow}
           onCreateSnapshot={onCreateSnapshot}

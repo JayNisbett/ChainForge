@@ -252,7 +252,7 @@ function filterVarsByLLM(vars: PromptVarsDict, llm_key: string): Dict {
         typeof v === "string" ||
         v?.llm === undefined ||
         typeof v.llm === "string" ||
-        v.llm.key === llm_key,
+        v.llm.id === llm_key,
     );
   });
   return _vars;
@@ -683,14 +683,14 @@ export async function fetchEnvironAPIKeys(): Promise<Dict<string>> {
 /**
  * Queries LLM(s) with root prompt template `prompt` and prompt input variables `vars`, `n` times per prompt.
  * Soft-fails if API calls fail, and collects the errors in `errors` property of the return object.
- * 
- * @param id a unique ID to refer to this information. Used when cache'ing responses. 
+ *
+ * @param id a unique ID to refer to this information. Used when cache'ing responses.
  * @param llm a string, list of strings, or list of LLM spec dicts specifying the LLM(s) to query.
  * @param n the amount of generations for each prompt. All LLMs will be queried the same number of times 'n' per each prompt.
  * @param prompt the prompt template, with any {{}} vars
- * @param vars a dict of the template variables to fill the prompt template with, by name. 
+ * @param vars a dict of the template variables to fill the prompt template with, by name.
                For each var, can be single values or a list; in the latter, all permutations are passed. (Pass empty dict if no vars.)
- * @param chat_histories Either an array of `ChatHistory` (to use across all LLMs), or a dict indexed by LLM nicknames of `ChatHistory` arrays to use per LLM. 
+ * @param chat_histories Either an array of `ChatHistory` (to use across all LLMs), or a dict indexed by LLM nicknames of `ChatHistory` arrays to use per LLM.
  * @param api_keys (optional) a dict of {api_name: api_key} pairs. Supported key names: OpenAI, Anthropic, Google
  * @param no_cache (optional) if true, deletes any cache'd responses for 'id' (always calls the LLMs fresh)
  * @param progress_listener (optional) a callback whenever an LLM response is collected, on the current progress
@@ -1022,10 +1022,10 @@ export async function executejs(
         To run Javascript code in a psuedo-'sandbox' environment, we
         can use an iframe and run eval() inside the iframe, instead of the current environment.
         This is slightly safer than using eval() directly, doesn't clog our namespace, and keeps
-        multiple Evaluate node execution environments separate. 
-        
-        The Evaluate node in the front-end has a hidden iframe with the following id. 
-        We need to get this iframe element. 
+        multiple Evaluate node execution environments separate.
+
+        The Evaluate node in the front-end has a hidden iframe with the following id.
+        We need to get this iframe element.
       */
       iframe = document.getElementById(`${id}-iframe`);
       if (!iframe)
@@ -1501,7 +1501,7 @@ export async function fetchExampleFlow(evalname: string): Promise<Dict> {
  * Fetches a preconverted OpenAI eval as a .cforge JSON file.
 
    First checks if it's running locally; if so, defaults to Flask backend for this bunction.
-   Otherwise, tries to fetch the eval from a relative path on the website. 
+   Otherwise, tries to fetch the eval from a relative path on the website.
 
  * @param _name The name of the eval to grab (without .cforge extension)
  * @returns a Promise with the JSON of the loaded data
@@ -1542,8 +1542,8 @@ export async function fetchOpenAIEval(evalname: string): Promise<Dict> {
 /**
  * Passes a Python script to load a custom model provider to the Flask backend.
 
- * @param code The Python script to pass, as a string. 
- * @returns a Promise with the JSON of the response. Will include 'error' key if error'd; if success, 
+ * @param code The Python script to pass, as a string.
+ * @returns a Promise with the JSON of the response. Will include 'error' key if error'd; if success,
  *          a 'providers' key with a list of all loaded custom provider callbacks, as dicts.
  */
 export async function initCustomProvider(
@@ -1572,8 +1572,8 @@ export async function initCustomProvider(
 /**
  * Asks Python script to remove a custom provider with name 'name'.
 
- * @param name The name of the provider to remove. The name must match the name in the `ProviderRegistry`.  
- * @returns a Promise with the JSON of the response. Will include 'error' key if error'd; if success, 
+ * @param name The name of the provider to remove. The name must match the name in the `ProviderRegistry`.
+ * @returns a Promise with the JSON of the response. Will include 'error' key if error'd; if success,
  *          a 'success' key with a true value.
  */
 export async function removeCustomProvider(name: string): Promise<boolean> {

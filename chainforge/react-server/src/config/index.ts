@@ -1,3 +1,4 @@
+import { v4 as uuid } from "uuid";
 import { NativeLLM } from "../backend/models";
 import { LLMSpec, LLMGroup } from "../backend/typing";
 
@@ -63,6 +64,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
     emoji: "🤖",
     items: [
       {
+        id: uuid(),
         name: "GPT3.5",
         emoji: "🤖",
         model: "gpt-3.5-turbo",
@@ -70,6 +72,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 1.0,
       }, // The base_model designates what settings form will be used, and must be unique.
       {
+        id: uuid(),
         name: "GPT4",
         emoji: "🥵",
         model: "gpt-4",
@@ -77,6 +80,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 1.0,
       },
       {
+        id: uuid(),
         name: "GPT4o",
         emoji: "👄",
         model: "gpt-4o",
@@ -84,6 +88,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 1.0,
       },
       {
+        id: uuid(),
         name: "GPT4o-mini",
         emoji: "👄",
         model: "gpt-4o-mini",
@@ -91,6 +96,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 1.0,
       },
       {
+        id: uuid(),
         name: "Dall-E",
         emoji: "🖼",
         model: "dall-e-2",
@@ -104,6 +110,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
     emoji: "📚",
     items: [
       {
+        id: uuid(),
         name: "Claude 3.5 Sonnet",
         emoji: "📚",
         model: "claude-3-5-sonnet-latest",
@@ -111,6 +118,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.5,
       },
       {
+        id: uuid(),
         name: "Claude 3.5 Haiku",
         emoji: "📗",
         model: "claude-3-5-haiku-latest",
@@ -118,6 +126,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.5,
       },
       {
+        id: uuid(),
         name: "Claude 3 Opus",
         emoji: "📙",
         model: "claude-3-opus-latest",
@@ -125,6 +134,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.5,
       },
       {
+        id: uuid(),
         name: "Claude 2",
         emoji: "📓",
         model: "claude-2",
@@ -138,6 +148,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
     emoji: "♊",
     items: [
       {
+        id: uuid(),
         name: "Gemini 1.5",
         emoji: "♊",
         model: "gemini-1.5-pro",
@@ -145,6 +156,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.7,
       },
       {
+        id: uuid(),
         name: "Gemini 1.5 Flash",
         emoji: "📸",
         model: "gemini-1.5-flash",
@@ -152,6 +164,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.7,
       },
       {
+        id: uuid(),
         name: "Gemini 1.5 Flash 8B",
         emoji: "⚡️",
         model: "gemini-1.5-flash-8b",
@@ -165,6 +178,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
     emoji: "🤗",
     items: [
       {
+        id: uuid(),
         name: "Mistral.7B",
         emoji: "🤗",
         model: "mistralai/Mistral-7B-Instruct-v0.1",
@@ -172,6 +186,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 1.0,
       },
       {
+        id: uuid(),
         name: "Falcon.7B",
         emoji: "🤗",
         model: "tiiuae/falcon-7b-instruct",
@@ -181,6 +196,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
     ],
   },
   {
+    id: uuid(),
     name: "Aleph Alpha",
     emoji: "💡",
     model: "luminous-base",
@@ -188,6 +204,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
     temp: 0.0,
   },
   {
+    id: uuid(),
     name: "Azure OpenAI",
     emoji: "🔷",
     model: "azure-openai",
@@ -199,6 +216,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
     emoji: "🪨",
     items: [
       {
+        id: uuid(),
         name: "Anthropic Claude",
         emoji: "👨‍🏫",
         model: NativeLLM.Bedrock_Claude_3_Haiku,
@@ -206,6 +224,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.9,
       },
       {
+        id: uuid(),
         name: "AI21 Jurassic 2",
         emoji: "🦖",
         model: NativeLLM.Bedrock_Jurassic_Ultra,
@@ -213,6 +232,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.9,
       },
       {
+        id: uuid(),
         name: "Amazon Titan",
         emoji: "🏛️",
         model: NativeLLM.Bedrock_Titan_Large,
@@ -220,6 +240,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.9,
       },
       {
+        id: uuid(),
         name: "Cohere Command Text 14",
         emoji: "📚",
         model: NativeLLM.Bedrock_Command_Text,
@@ -227,6 +248,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.9,
       },
       {
+        id: uuid(),
         name: "Mistral Mistral",
         emoji: "💨",
         model: NativeLLM.Bedrock_Mistral_Mistral,
@@ -234,6 +256,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.9,
       },
       {
+        id: uuid(),
         name: "Mistral Mixtral",
         emoji: "🌪️",
         model: NativeLLM.Bedrock_Mistral_Mixtral,
@@ -241,6 +264,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.9,
       },
       {
+        id: uuid(),
         name: "Meta Llama2 Chat",
         emoji: "🦙",
         model: NativeLLM.Bedrock_Meta_LLama2Chat_13b,
@@ -248,6 +272,7 @@ export const initLLMProviderMenu: (LLMSpec | LLMGroup)[] = [
         temp: 0.9,
       },
       {
+        id: uuid(),
         name: "Meta Llama3 Instruct",
         emoji: "🦙",
         model: NativeLLM.Bedrock_Meta_LLama3Instruct_8b,

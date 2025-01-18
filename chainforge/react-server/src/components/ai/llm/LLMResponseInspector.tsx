@@ -636,7 +636,18 @@ const LLMResponseInspector: React.FC<LLMResponseInspectorProps> = ({
             <tr key={`r${idx}`} style={{ borderBottom: "2px solid #fff" }}>
               {var_cols_vals.map((c, i) => (
                 <td key={`v${i}`} className="inspect-table-var">
-                  <ScrollArea.Autosize mt="sm" mah={500} maw={300}>
+                  <ScrollArea.Autosize
+                    mt="sm"
+                    mah={500}
+                    maw={300}
+                    placeholder="Scroll to see more"
+                    onPointerEnterCapture={() => {
+                      console.log("pointer entered");
+                    }}
+                    onPointerLeaveCapture={() => {
+                      console.log("pointer left");
+                    }}
+                  >
                     {c}
                   </ScrollArea.Autosize>
                 </td>

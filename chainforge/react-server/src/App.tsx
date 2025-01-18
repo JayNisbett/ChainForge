@@ -11,27 +11,10 @@ import ReactFlow, {
   ReactFlowInstance,
   Node,
   Edge,
-  ReactFlowJsonObject,
 } from "reactflow";
-import { Button, LoadingOverlay } from "@mantine/core";
+import { LoadingOverlay } from "@mantine/core";
 import { useClipboard, useHotkeys } from "@mantine/hooks";
 import { useContextMenu } from "mantine-contextmenu";
-import {
-  IconSettings,
-  IconTextPlus,
-  IconTerminal,
-  IconSettingsAutomation,
-  IconFileSymlink,
-  IconRobot,
-  IconRuler2,
-  IconArrowMerge,
-  IconArrowsSplit,
-  IconForms,
-  IconAbacus,
-  IconLayersSubtract,
-  IconLayersIntersect,
-} from "@tabler/icons-react";
-import RemoveEdge from "./components/edges/RemoveEdge";
 import GlobalSettingsModal, {
   GlobalSettingsModalRef,
 } from "./components/modals/GlobalSettingsModal";
@@ -42,23 +25,12 @@ import AreYouSureModal, {
   AreYouSureModalRef,
 } from "./components/modals/AreYouSureModal";
 
-import {
-  getDefaultModelFormData,
-  getDefaultModelSettings,
-} from "./components/ai/models/ModelSettingSchemas";
-import { v4 as uuid } from "uuid";
 import LZString from "lz-string";
 import { EXAMPLEFLOW_1 } from "./components/flows/example_flows";
-
-import { FlowManager } from "./components/FlowManager";
 import { GroupModal, GroupModalRef } from "./components/modals/GroupModal";
 import { AlertContext, AlertProvider } from "./components/AlertProvider";
 import { SelectionActionMenu } from "./components/SelectionActionMenu";
-import { FlowData, Flow } from "./types/flow";
-import promptData from "./backend/aiPromptNodeData.json";
-import { addPromptNodesFromData } from "./utils/nodeGenerator";
-import promptCategoriesData from "./backend/aiPromptCategoriesData.json";
-import MainMenu from "./components/menu/MainMenu";
+import { FlowData } from "./types/flow";
 
 // Styling
 import "reactflow/dist/style.css"; // reactflow
@@ -70,49 +42,27 @@ import "lazysizes/plugins/attrchange/ls.attrchange";
 
 // State management (from https://reactflow.dev/docs/guides/state-management/)
 import { shallow } from "zustand/shallow";
-import useStore, { StoreHandles, Project } from "./store/store";
+import useStore from "./store/store";
 import StorageCache from "./backend/cache";
 import { APP_IS_RUNNING_LOCALLY, browserTabIsActive } from "./backend/utils";
-import { Dict, JSONCompatible, LLMSpec } from "./backend/typing";
-import {
-  exportCache,
-  fetchEnvironAPIKeys,
-  fetchExampleFlow,
-  fetchOpenAIEval,
-  importCache,
-} from "./backend/backend";
 
-// Device / Browser detection
-import {
-  isMobile,
-  isChrome,
-  isFirefox,
-  isEdgeChromium,
-  isChromium,
-} from "react-device-detect";
+import { fetchEnvironAPIKeys, fetchExampleFlow } from "./backend/backend";
+
+import { getSharedFlowURLParam, downloadJSON, selector } from "./utils/app";
+
 import { handleError } from "./utils/errorHandling";
 import { FlowService } from "./services/FlowService";
-import {
-  createSnapshot,
-  IS_ACCEPTED_BROWSER,
-  onClickNewFlow,
-  onClickSettings,
-  restoreSnapshot,
-  selector,
-} from "./utils/app";
 import { nodeTypes, edgeTypes } from "./config/nodeRegistry";
-import MenuTooltip from "./components/menu/MenuToolTip";
-import ShareFlowButton from "./components/buttons/ShareFlow";
-import CreateNewFlowButton from "./components/buttons/CreateFlow";
-import ExampleFlowButton from "./components/buttons/ExampleFlow";
+
 import { useVueUpdates } from "./hooks/useVueUpdates";
 import { useFlowManagement } from "./hooks/useFlowManagement";
 import { ControlButtons } from "./components/controls/ControlButtons";
-import { useFlowInitialization } from "./hooks/useFlowInitialization";
+
 import { useAutosaving } from "./hooks/useAutosaving";
-import { CforgeData } from "./types/cache";
+
 import { useFlowSaving } from "./hooks/useFlowSaving";
 import { useNodeCreation } from "./hooks/useNodeCreation";
+import { useFlowActions } from "./hooks/useFlowActions";
 
 // const connectionLineStyle = { stroke: '#ddd' };
 const snapGrid: [number, number] = [16, 16];
@@ -219,7 +169,7 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     setRfInstance(rf_inst);
     initAutosaving(rf_inst);
 
-    if (APP_IS_RUNNING_LOCALLY) {
+    if (APP_IS_RUNNING_LOCALLY()) {
       // If we're running locally, try to fetch API keys from Python os.environ variables in the locally running Flask backend:
       fetchEnvironAPIKeys()
         .then((api_keys) => {
@@ -480,14 +430,14 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
         groupId,
         nodes: groupedNodes.map((n) => ({
           id: n.id,
-          type: n.type,
+          type: n.type || "",
           name: n.data?.name || n.type,
         })),
         connections: nodeConnections.map((e) => ({
           source: e.source,
           target: e.target,
-          sourceHandle: e.sourceHandle,
-          targetHandle: e.targetHandle,
+          sourceHandle: e.sourceHandle || undefined,
+          targetHandle: e.targetHandle || undefined,
         })),
         isCollapsed: false,
       });
@@ -513,10 +463,14 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
         name,
         description,
         referencedFlowId: newFlowId,
-        nodes: selectedNodes,
+        nodes: selectedNodes.map((nodeId) => ({
+          id: nodeId,
+          type: nodes.find((n) => n.id === nodeId)?.type || "",
+          name: nodes.find((n) => n.id === nodeId)?.data?.name || "",
+        })),
       });
     },
-    [selectedNodes, addGroupNode, showAlert],
+    [selectedNodes, nodes, addGroupNode, showAlert],
   );
 
   // Add keyboard shortcuts
@@ -549,6 +503,12 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     // Sync selected nodes whenever nodes change
     syncSelectedNodes();
   }, [nodes, syncSelectedNodes]);
+
+  const { onClickSettings, createSnapshot, restoreSnapshot } = useFlowActions(
+    settingsModal,
+    rfInstance,
+    currentFlow,
+  );
 
   return (
     <AlertProvider>
@@ -616,7 +576,7 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
           onExport={exportFlow}
           onImport={importFlowFromFile}
           onSettings={onClickSettings}
-          currentFlow={currentFlow}
+          currentFlow={currentFlow || undefined}
           onCreateFlow={handleCreateFlowFromSelection}
           onLoadFlow={resetFlow}
           onCreateSnapshot={createSnapshot}

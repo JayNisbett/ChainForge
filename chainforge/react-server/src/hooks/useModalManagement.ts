@@ -24,6 +24,13 @@ export const useModalManagement = () => {
   const openConfirmationModal = () => confirmationModal.current?.trigger();
   const openGroupModal = () => groupModal.current?.trigger();
 
+  const onClickExamples = () => {
+    if (examplesModal && examplesModal.current) examplesModal.current.trigger();
+  };
+  const onClickSettings = () => {
+    if (settingsModal && settingsModal.current) settingsModal.current.trigger();
+  };
+
   return {
     settingsModal,
     examplesModal,
@@ -35,5 +42,7 @@ export const useModalManagement = () => {
     openExamplesModal,
     openConfirmationModal,
     openGroupModal,
+    onClickExamples,
+    onClickSettings,
   };
 };

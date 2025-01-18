@@ -111,6 +111,7 @@ export type QueryProgress = {
 
 /** What LLM to call, at what settings. */
 export interface LLMSpec {
+  key?: string;
   id: string;
   name: string;
   emoji: string;

@@ -21,7 +21,7 @@ export const useFlowSaving = (currentFlow: Flow | null) => {
       const updatedFlow = {
         ...currentFlow,
         data: flowData,
-        cache: StorageCache.getAll(),
+        cache: StorageCache.getAllMatching((key) => key.includes("prompt")),
         updatedAt: new Date().toISOString(),
       };
 

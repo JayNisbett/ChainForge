@@ -2521,8 +2521,8 @@ export const setCustomProvider = (
   const AvailableLLMs = useStore.getState().AvailableLLMs;
   const prev_provider_idx = AvailableLLMs.findIndex((d) => d.name === name);
   if (prev_provider_idx > -1)
-    AvailableLLMs[prev_provider_idx] = new_provider as LLMSpec;
-  else AvailableLLMs.push(new_provider as LLMSpec);
+    AvailableLLMs[prev_provider_idx] = new_provider as unknown as LLMSpec;
+  else AvailableLLMs.push(new_provider as unknown as LLMSpec);
   ModelSettings[base_model] = compiled_schema;
 
   // Add rate limit info, if specified

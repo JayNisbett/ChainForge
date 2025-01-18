@@ -45,6 +45,14 @@ export class FlowService {
     return flow;
   }
 
+  static forceMigration(): void {
+    const flows = this.getFlows();
+    flows.forEach((flow) => {
+      flow.id = `flow-${uuid()}`;
+    });
+    localStorage.setItem(this.FLOWS_KEY, JSON.stringify(flows));
+  }
+
   static initializeDefaultFlows(): void {
     const flows = this.getFlows();
     if (flows.length === 0) {
