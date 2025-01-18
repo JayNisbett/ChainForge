@@ -14,6 +14,13 @@ interface FlowManagerProps {
   onRestoreSnapshot: (snapshotId: string) => void;
 }
 
+interface Snapshot {
+  id: string;
+  name: string;
+  data: any; // Define more specific type if possible
+  createdAt: string;
+}
+
 export function FlowManager({
   currentFlow,
   onCreateFlow,
@@ -105,11 +112,11 @@ export function FlowManager({
           {snapshots.length > 0 && (
             <>
               <Menu.Label>Snapshots</Menu.Label>
-              {snapshots.map((snapshot) => (
+              {snapshots.map((snapshot: Snapshot) => (
                 <Menu.Item
                   key={snapshot.id}
                   onClick={() => onRestoreSnapshot(snapshot.id)}
-                  title={snapshot.description || "No description"}
+                  title={snapshot.name || "No description"}
                 >
                   <div
                     style={{
@@ -118,9 +125,7 @@ export function FlowManager({
                       alignItems: "center",
                     }}
                   >
-                    <span>
-                      {snapshot.name || `Version ${snapshot.version}`}
-                    </span>
+                    <span>{snapshot.name || `Version ${snapshot.id}`}</span>
                     <Text size="xs" color="dimmed">
                       {new Date(snapshot.createdAt).toLocaleString()}
                     </Text>

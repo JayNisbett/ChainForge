@@ -1,8 +1,13 @@
 import React from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { LLMSpec } from "../backend/typing";
 
-// In your LLM item component
-const LLMItem = ({ llm, index }) => (
+interface LLMItemProps {
+  llm: LLMSpec;
+  index: number;
+}
+
+const LLMItem: React.FC<LLMItemProps> = ({ llm, index }) => (
   <Draggable draggableId={llm.id} index={index}>
     {(provided) => (
       <div ref={provided.innerRef} {...provided.draggableProps}>
@@ -19,13 +24,17 @@ const LLMItem = ({ llm, index }) => (
   </Draggable>
 );
 
-// In your LLM list component
-const LLMList = ({ llms }) => (
-  <DragDropContext onDragEnd={handleDragEnd}>
+interface LLMListProps {
+  llms: LLMSpec[];
+  onDragEnd: (result: any) => void; // Define proper type for result
+}
+
+const LLMList: React.FC<LLMListProps> = ({ llms, onDragEnd }) => (
+  <DragDropContext onDragEnd={onDragEnd}>
     <Droppable droppableId="llm-list">
       {(provided) => (
         <div ref={provided.innerRef} {...provided.droppableProps}>
-          {llms.map((llm, index) => (
+          {llms.map((llm: LLMSpec, index: number) => (
             <LLMItem key={llm.id} llm={llm} index={index} />
           ))}
           {provided.placeholder}
@@ -34,3 +43,5 @@ const LLMList = ({ llms }) => (
     </Droppable>
   </DragDropContext>
 );
+
+export default LLMList;

@@ -110,17 +110,17 @@ export type QueryProgress = {
 };
 
 /** What LLM to call, at what settings. */
-export type LLMSpec = {
+export interface LLMSpec {
+  id: string;
   name: string;
   emoji: string;
-  base_model: string;
   model: string;
+  base_model: string;
   temp: number;
-  key?: string;
-  formData?: Dict<JSONCompatible>;
-  settings?: Dict<JSONCompatible>;
-  progress?: QueryProgress; // only used for front-end to display progress collecting responses for this LLM
-};
+  settings?: any;
+  formData?: any;
+  progress?: QueryProgress;
+}
 
 export type LLMGroup = {
   group: string;
