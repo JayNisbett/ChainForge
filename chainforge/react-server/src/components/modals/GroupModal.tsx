@@ -1,5 +1,13 @@
 import React, { forwardRef, useImperativeHandle, useState } from "react";
-import { Modal, TextInput, Button, Stack, Tabs, Text } from "@mantine/core";
+import {
+  Modal,
+  TextInput,
+  Button,
+  Stack,
+  Tabs,
+  Text,
+  TabsValue,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconLayersSubtract, IconLayersIntersect } from "@tabler/icons-react";
 import useStore from "../../store/store";
@@ -8,6 +16,8 @@ import { FlowService } from "../../services/FlowService";
 export interface GroupModalRef {
   trigger: () => void;
 }
+
+type TabValue = "group" | "flow";
 
 interface GroupModalProps {
   onCreateGroup?: (name: string, description?: string) => void;
@@ -59,9 +69,9 @@ export const GroupModal = forwardRef<GroupModalRef, GroupModalProps>(
       >
         <Tabs
           value={activeTab}
-          onChange={(value: string | null) => {
-            if (value === "group" || value === "flow") {
-              setActiveTab(value);
+          onChange={(val: TabsValue) => {
+            if (val === "group" || val === "flow") {
+              setActiveTab(val as TabValue);
             }
           }}
         >

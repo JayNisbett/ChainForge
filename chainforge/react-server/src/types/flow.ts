@@ -22,12 +22,12 @@ export interface Flow {
   id: string;
   name: string;
   description?: string;
-  data: FlowData;
-  cache: Record<string, any>;
+  isDefault?: boolean;
+  version: number;
   createdAt: string;
   updatedAt: string;
-  version: string;
-  isDefault?: boolean;
+  data: FlowData;
+  cache?: Dict<any>;
 }
 
 export interface FlowSnapshot {

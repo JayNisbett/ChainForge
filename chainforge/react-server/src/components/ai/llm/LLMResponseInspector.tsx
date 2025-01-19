@@ -634,24 +634,24 @@ const LLMResponseInspector: React.FC<LLMResponseInspectorProps> = ({
 
           return (
             <tr key={`r${idx}`} style={{ borderBottom: "2px solid #fff" }}>
-              {var_cols_vals.map((c, i) => (
+              {var_cols_vals.map((c: React.ReactNode, i: number) => (
                 <td key={`v${i}`} className="inspect-table-var">
-                  <ScrollArea.Autosize mt="sm" mah={500} maw={300}>
+                  <ScrollArea mt="sm" mah={500} maw={300}>
                     {c}
-                  </ScrollArea.Autosize>
+                  </ScrollArea>
                 </td>
               ))}
-              {metavar_cols_vals.map((c, i) => (
+              {metavar_cols_vals.map((c: React.ReactNode, i: number) => (
                 <td key={`m${i}`} className="inspect-table-metavar">
                   {c}
                 </td>
               ))}
-              {sel_var_cols.map((c, i) => (
+              {sel_var_cols.map((c: React.ReactNode, i: number) => (
                 <td key={`c${i}`} className="inspect-table-llm-resp">
                   {c}
                 </td>
               ))}
-              {eval_cols_vals.map((c, i) => (
+              {eval_cols_vals.map((c: React.ReactNode, i: number) => (
                 <td key={`e${i}`} className="inspect-table-score-col">
                   <Stack spacing={0}>{c}</Stack>
                 </td>

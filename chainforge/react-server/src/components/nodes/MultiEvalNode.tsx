@@ -566,7 +566,6 @@ const MultiEvalNode: React.FC<MultiEvalNodeProps> = ({ data, id }) => {
             // Sanity check that the lengths of eval result lists are equal across evaluators:
             if (merged_res_objs_by_uid[uid].eval_res === undefined) return;
             else if (
-              // @ts-expect-error We've already checked that eval_res is defined, yet TS throws an error anyway... skip it:
               merged_res_objs_by_uid[uid].eval_res.items.length !==
               res_obj.eval_res?.items?.length
             ) {
@@ -576,7 +575,7 @@ const MultiEvalNode: React.FC<MultiEvalNodeProps> = ({ data, id }) => {
               return;
             }
             // Add the new evaluation result, keyed by evaluator name:
-            // @ts-expect-error We've already checked that eval_res is defined, yet TS throws an error anyway... skip it:
+
             merged_res_objs_by_uid[uid].eval_res.items.forEach((item, idx) => {
               if (typeof item === "object") {
                 let v = res_obj.eval_res?.items[idx];

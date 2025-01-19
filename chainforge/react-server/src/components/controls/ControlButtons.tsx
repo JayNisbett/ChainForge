@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Button } from "@mantine/core";
 import { IconSettings } from "@tabler/icons-react";
 import ShareFlowButton from "../buttons/ShareFlow";
@@ -6,45 +6,35 @@ import CreateNewFlowButton from "../buttons/CreateFlow";
 import ExampleFlowButton from "../buttons/ExampleFlow";
 import { FlowManager } from "../FlowManager";
 import MainMenu from "../menu/MainMenu";
-import { Flow } from "../types/flow";
+import { useFlowManagement } from "../../hooks/useFlowManagement";
+import { ModelSettingsModalRef } from "../ai/models/ModelSettingsModal";
+export const ControlButtons = () => {
+  const {
+    currentFlow,
+    exportFlow,
+    importFlowFromFile,
+    onClickSettings,
+    createFlow,
+    loadFlow,
+    createSnapshot,
+    restoreSnapshot,
+    importFlowFromJSON,
+    onSelectExampleFlow,
+    handleCreateGroup,
+    handleCreateFlowFromSelection,
+  } = useFlowManagement();
 
-interface ControlButtonsProps {
-  onExport: () => void;
-  onImport: () => void;
-  onSettings: () => void;
-  currentFlow?: Flow;
-  onCreateFlow: (name: string, description?: string) => void;
-  onLoadFlow: (flowId: string) => void;
-  onCreateSnapshot: (name?: string, description?: string) => void;
-  onRestoreSnapshot: (snapshotId: string) => void;
-}
-
-export const ControlButtons: React.FC<ControlButtonsProps> = ({
-  onExport,
-  onImport,
-  onSettings,
-  currentFlow,
-  onCreateFlow,
-  onLoadFlow,
-  onCreateSnapshot,
-  onRestoreSnapshot,
-}) => {
+  const settingsModal = useRef<ModelSettingsModalRef>(null);
   return (
     <>
       <div
         id="custom-controls"
         style={{ position: "fixed", left: "10px", top: "10px", zIndex: 8 }}
       >
-        <FlowManager
-          currentFlow={currentFlow}
-          onCreateFlow={onCreateFlow}
-          onLoadFlow={onLoadFlow}
-          onCreateSnapshot={onCreateSnapshot}
-          onRestoreSnapshot={onRestoreSnapshot}
-        />
+        <FlowManager />
         <MainMenu />
         <Button
-          onClick={onExport}
+          onClick={exportFlow}
           size="sm"
           variant="outline"
           bg="#eee"
@@ -54,7 +44,7 @@ export const ControlButtons: React.FC<ControlButtonsProps> = ({
           Export
         </Button>
         <Button
-          onClick={onImport}
+          onClick={importFlowFromFile}
           size="sm"
           variant="outline"
           bg="#eee"
@@ -67,7 +57,12 @@ export const ControlButtons: React.FC<ControlButtonsProps> = ({
         <ShareFlowButton />
         <CreateNewFlowButton />
         <ExampleFlowButton />
-        <Button onClick={onSettings} size="sm" variant="gradient" compact>
+        <Button
+          onClick={() => settingsModal.current?.trigger()}
+          size="sm"
+          variant="gradient"
+          compact
+        >
           <IconSettings size={"90%"} />
         </Button>
       </div>

@@ -117,22 +117,22 @@ export function LLMList({
       settingsData: Dict<JSONCompatible>,
     ) => {
       // First check for the item with key and get it:
-      const llm = items.find((i) => i.id === savedItem.id);
+      const llm = items.find((i) => i.key === savedItem.key);
       if (!llm) {
         console.error(
-          `Could not update model settings: Could not find item with key ${savedItem.id}.`,
+          `Could not update model settings: Could not find item with key ${savedItem.key}.`,
         );
         return;
       }
 
       const prev_names = items
-        .filter((item) => item.id !== savedItem.id)
+        .filter((item) => item.key !== savedItem.key)
         .map((item) => item.name);
 
       // Change the settings for the LLM item to the value of 'formData':
       updateItems(
         items.map((item) => {
-          if (item.id === savedItem.id) {
+          if (item.key === savedItem.key) {
             // Create a new item with the same settings
             const updated_item: LLMSpec = { ...item };
             updated_item.formData = { ...formData };
@@ -187,14 +187,14 @@ export function LLMList({
   const removeItem = useCallback(
     (item_key: string) => {
       // Double-check that the item we want to remove is in the list of items...
-      if (!items.find((i) => i.id === item_key)) {
+      if (!items.find((i) => i.key === item_key)) {
         console.error(
           `Could not remove model from LLM list: Could not find item with key ${item_key}.`,
         );
         return;
       }
       // Remove it
-      updateItems(items.filter((i) => i.id !== item_key));
+      updateItems(items.filter((i) => i.key !== item_key));
     },
     [items, updateItems],
   );
@@ -204,10 +204,10 @@ export function LLMList({
     // while preserving the current order of 'items'.
     // Check for new items and for each, add to end:
     const new_items = Array.from(
-      items.filter((i) => llms.some((v) => v.id === i.id)),
+      items.filter((i) => llms.some((v) => v.key === i.key)),
     );
     llms.forEach((item) => {
-      if (!items.find((i) => i.id === item.id)) new_items.push(item);
+      if (!items.find((i) => i.key === item.key)) new_items.push(item);
     });
 
     updateItems(new_items);
@@ -240,8 +240,8 @@ export function LLMList({
             <div {...provided.droppableProps} ref={provided.innerRef}>
               {items.map((item, index) => (
                 <Draggable
-                  key={item.id}
-                  draggableId={item.id ?? index.toString()}
+                  key={item.key}
+                  draggableId={item.key ?? index.toString()}
                   index={index}
                 >
                   {(provided, snapshot) => (
@@ -351,7 +351,7 @@ export const LLMListContainer = forwardRef<
     (llm_keys_w_errors: string[]) => {
       setLLMItems(
         llmItemsCurrState.map((item) => {
-          if (item.id !== undefined && llm_keys_w_errors.includes(item.id)) {
+          if (item.key !== undefined && llm_keys_w_errors.includes(item.key)) {
             if (!item.progress) item.progress = { success: 0, error: 100 };
             else {
               const succ_perc = item.progress.success;
@@ -371,7 +371,7 @@ export const LLMListContainer = forwardRef<
 
   const getLLMListItemForKey = useCallback(
     (key: string) => {
-      return llmItemsCurrState.find((item) => item.id === key);
+      return llmItemsCurrState.find((item) => item.key === key);
     },
     [llmItemsCurrState],
   );
