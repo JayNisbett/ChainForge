@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Handle, Position } from "reactflow";
 import { Box, Text, Button, Stack, Divider, Group } from "@mantine/core";
 import {
@@ -30,25 +30,43 @@ interface GroupNodeData {
 }
 
 interface GroupNodeProps {
-  data: {
-    data: GroupNodeData;
-    id: string;
-    type: string;
-    position: { x: number; y: number };
-    selected: boolean;
-  };
+  id: string;
+  data: GroupNodeData;
   selected: boolean;
 }
 
-export default function GroupNode({ data, selected }: GroupNodeProps) {
-  const nodeData = data.data;
-  const [isCollapsed, setIsCollapsed] = useState(
-    nodeData?.isCollapsed || false,
-  );
-  const group = nodeData?.groupId
-    ? useStore((state) => state.groups.find((g) => g.id === nodeData.groupId))
+export default function GroupNode({ id, data, selected }: GroupNodeProps) {
+  const [isCollapsed, setIsCollapsed] = useState(data?.isCollapsed || false);
+
+  const { groups, ungroup, updateGroup } = useStore((state) => ({
+    groups: state.groups,
+    ungroup: state.ungroup,
+    updateGroup: state.updateGroup,
+  }));
+
+  const group = data?.groupId
+    ? groups.find((g) => g.id === data.groupId)
     : null;
-  const ungroup = useStore((state) => state.ungroup);
+
+  // Update group collapse state
+  const handleCollapse = useCallback(() => {
+    const newIsCollapsed = !isCollapsed;
+    setIsCollapsed(newIsCollapsed);
+    if (group) {
+      updateGroup(group.id, {
+        ...group,
+        isCollapsed: newIsCollapsed,
+      });
+    }
+  }, [isCollapsed, group, updateGroup]);
+
+  // Handle ungroup action
+  const handleUngroup = useCallback(() => {
+    console.log("Ungrouping group node", data);
+    if (data?.groupId) {
+      ungroup(data.groupId);
+    }
+  }, [data?.groupId, ungroup]);
 
   // Helper to get node display name
   const getNodeDisplayName = (node: { type: string; name?: string }) => {
@@ -57,9 +75,9 @@ export default function GroupNode({ data, selected }: GroupNodeProps) {
 
   // Create a map of connections for display
   const connectionMap =
-    nodeData?.connections?.reduce((acc, conn) => {
-      const sourceNode = nodeData?.nodes?.find((n) => n.id === conn.source);
-      const targetNode = nodeData?.nodes?.find((n) => n.id === conn.target);
+    data?.connections?.reduce((acc, conn) => {
+      const sourceNode = data?.nodes?.find((n) => n.id === conn.source);
+      const targetNode = data?.nodes?.find((n) => n.id === conn.target);
       if (sourceNode && targetNode) {
         acc.push(
           `${getNodeDisplayName(sourceNode)} → ${getNodeDisplayName(targetNode)}`,
@@ -68,19 +86,32 @@ export default function GroupNode({ data, selected }: GroupNodeProps) {
       return acc;
     }, [] as string[]) || [];
 
-  if (!nodeData) {
+  if (!data) {
+    console.warn("GroupNode received no data", { id, selected });
     return null;
   }
 
   return (
-    <BaseNode classNames="group-node" nodeId={nodeData.groupId || "group-node"}>
+    <BaseNode
+      classNames="group-node"
+      nodeId={id}
+      style={{
+        minWidth: "200px",
+        minHeight: "100px",
+        visibility: "visible",
+      }}
+    >
       <NodeLabel
-        title={nodeData.name || "Group Node"}
-        nodeId={nodeData.groupId || "group-node"}
+        title={data.name || "Group Node"}
+        nodeId={id}
         icon={<IconFolder size={16} />}
       />
 
-      <Handle type="target" position={Position.Left} />
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{ visibility: "visible" }}
+      />
 
       <Stack spacing="xs" p="sm">
         <Group position="apart" align="center">
@@ -89,14 +120,14 @@ export default function GroupNode({ data, selected }: GroupNodeProps) {
             variant="subtle"
             color="red"
             leftIcon={<IconUnlink size={14} />}
-            onClick={() => ungroup(data.id)}
+            onClick={handleUngroup}
           >
             Ungroup
           </Button>
           <Button
             size="xs"
             variant="subtle"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleCollapse}
             rightIcon={
               isCollapsed ? (
                 <IconChevronDown size={14} />
@@ -109,9 +140,9 @@ export default function GroupNode({ data, selected }: GroupNodeProps) {
           </Button>
         </Group>
 
-        {nodeData.description && (
+        {data.description && (
           <Text size="xs" color="dimmed">
-            {nodeData.description}
+            {data.description}
           </Text>
         )}
 
@@ -121,7 +152,7 @@ export default function GroupNode({ data, selected }: GroupNodeProps) {
             <Text size="sm" weight={500}>
               Contained Nodes:
             </Text>
-            {nodeData.nodes?.map((node) => (
+            {data.nodes?.map((node) => (
               <Text key={node.id} size="xs">
                 • {getNodeDisplayName(node)}
               </Text>
@@ -143,7 +174,11 @@ export default function GroupNode({ data, selected }: GroupNodeProps) {
         )}
       </Stack>
 
-      <Handle type="source" position={Position.Right} />
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{ visibility: "visible" }}
+      />
     </BaseNode>
   );
 }

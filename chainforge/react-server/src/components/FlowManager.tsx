@@ -1,41 +1,70 @@
-import React, { useState } from "react";
-import { Menu, Button, Modal, TextInput, Text } from "@mantine/core";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import {
+  Menu,
+  Button,
+  Modal,
+  TextInput,
+  Text,
+  Badge,
+  Group,
+  ActionIcon,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconDownload, IconTrash } from "@tabler/icons-react";
 import { FlowService } from "../services/FlowService";
+import { useFlowManagement } from "../hooks/useFlowManagement";
 import { Flow } from "../types/flow";
-import { Dict } from "../types/common";
 
-interface FlowManagerProps {
-  currentFlow: Flow | null;
-  onCreateFlow: (name: string, description?: string) => void;
-  onLoadFlow: (flowId: string) => void;
-  onCreateSnapshot: (name?: string, description?: string) => void;
-  onRestoreSnapshot: (snapshotId: string) => void;
-}
+export function FlowManager() {
+  const {
+    currentFlow,
+    loadFlow,
+    createFlow,
+    deleteFlow,
+    createSnapshot,
+    restoreSnapshot,
+  } = useFlowManagement();
 
-interface Snapshot {
-  id: string;
-  name: string;
-  data: any; // Define more specific type if possible
-  createdAt: string;
-}
-
-export function FlowManager({
-  currentFlow,
-  onCreateFlow,
-  onLoadFlow,
-  onCreateSnapshot,
-  onRestoreSnapshot,
-}: FlowManagerProps) {
+  // Only keep UI-specific state here
   const [opened, { open, close }] = useDisclosure(false);
   const [newFlowName, setNewFlowName] = useState("");
   const [newFlowDescription, setNewFlowDescription] = useState("");
+  const [forceUpdate, setForceUpdate] = useState(false);
 
-  const flows = FlowService.getFlows();
-  const snapshots = currentFlow
-    ? FlowService.getSnapshots().filter((s) => s.flowId === currentFlow.id)
-    : [];
+  // Initialize default flows on mount
+  useEffect(() => {
+    FlowService.initializeDefaultFlows();
+  }, []);
+
+  const flows = useMemo(() => {
+    const allFlows = FlowService.getFlows();
+    return allFlows.sort((a, b) => {
+      if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [forceUpdate]);
+
+  const handleCreateFlow = useCallback(
+    (name: string, description?: string) => {
+      createFlow(name, description);
+      close();
+      setNewFlowName("");
+      setNewFlowDescription("");
+    },
+    [createFlow, close],
+  );
+
+  const handleDeleteFlow = useCallback(
+    (flowId: string) => {
+      try {
+        deleteFlow(flowId);
+        setForceUpdate((prev) => !prev);
+      } catch (err) {
+        console.error("Failed to delete flow:", err);
+      }
+    },
+    [deleteFlow],
+  );
 
   return (
     <>
@@ -53,87 +82,41 @@ export function FlowManager({
         </Menu.Target>
 
         <Menu.Dropdown>
-          <Menu.Label>Flows</Menu.Label>
-          {flows.map((flow) => (
-            <Menu.Item
-              key={flow.id}
-              onClick={() => onLoadFlow(flow.id)}
-              rightSection={
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  {flow.isDefault ? (
-                    <Text size="xs">Default</Text>
-                  ) : (
-                    <IconTrash
-                      size={14}
-                      color="red"
-                      style={{ cursor: "pointer" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          confirm(
-                            `Are you sure you want to delete "${flow.name}"?`,
-                          )
-                        ) {
-                          FlowService.deleteFlow(flow.id);
-                          if (currentFlow?.id === flow.id) {
-                            const remainingFlows = FlowService.getFlows();
-                            if (remainingFlows.length > 0) {
-                              onLoadFlow(remainingFlows[0].id);
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              }
-            >
-              {flow.name}
-            </Menu.Item>
-          ))}
+          <Menu.Label>Default Flows</Menu.Label>
+          {flows
+            .filter((f) => f.isDefault)
+            .map((flow) => (
+              <Menu.Item
+                key={flow.id}
+                onClick={() => loadFlow(flow.id)}
+                rightSection={<Badge>Default</Badge>}
+              >
+                {flow.name}
+              </Menu.Item>
+            ))}
 
           <Menu.Divider />
-
-          <Menu.Label>Actions</Menu.Label>
-          <Menu.Item icon={<IconPlus size={14} />} onClick={open}>
-            New Flow
-          </Menu.Item>
-          {currentFlow && (
-            <Menu.Item
-              icon={<IconDownload size={14} />}
-              onClick={() => onCreateSnapshot()}
-            >
-              Create Snapshot
-            </Menu.Item>
-          )}
-
-          {snapshots.length > 0 && (
-            <>
-              <Menu.Label>Snapshots</Menu.Label>
-              {snapshots.map((snapshot: Snapshot) => (
-                <Menu.Item
-                  key={snapshot.id}
-                  onClick={() => onRestoreSnapshot(snapshot.id)}
-                  title={snapshot.name || "No description"}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+          <Menu.Label>My Flows</Menu.Label>
+          {flows
+            .filter((f) => !f.isDefault)
+            .filter((f) => f?.data?.nodes?.length > 0)
+            .map((flow) => (
+              <Menu.Item key={flow.id} onClick={() => loadFlow(flow.id)}>
+                <Group position="apart">
+                  <Text>{flow.name}</Text>
+                  <ActionIcon
+                    color="red"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFlow(flow.id);
                     }}
+                    disabled={flow.isDefault}
                   >
-                    <span>{snapshot.name || `Version ${snapshot.id}`}</span>
-                    <Text size="xs" color="dimmed">
-                      {new Date(snapshot.createdAt).toLocaleString()}
-                    </Text>
-                  </div>
-                </Menu.Item>
-              ))}
-            </>
-          )}
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+              </Menu.Item>
+            ))}
         </Menu.Dropdown>
       </Menu>
 
@@ -153,16 +136,8 @@ export function FlowManager({
           mt="md"
         />
         <Button
-          onClick={() => {
-            onCreateFlow(newFlowName, newFlowDescription);
-            close();
-            setNewFlowName("");
-            setNewFlowDescription("");
-          }}
+          onClick={() => handleCreateFlow(newFlowName, newFlowDescription)}
           mt="md"
-          size="sm"
-          variant="gradient"
-          compact
           disabled={!newFlowName}
         >
           Create Flow

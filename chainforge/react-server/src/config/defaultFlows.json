@@ -1,0 +1,249 @@
+[
+  {
+    "name": "Empty Flow",
+    "description": "Start with a blank canvas",
+    "data": {
+      "nodes": [],
+      "edges": [],
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "groups": []
+    }
+  },
+  {
+    "name": "Basic Chat Flow",
+    "description": "Simple chat interaction with one LLM",
+    "data": {
+      "nodes": [
+        {
+          "id": "prompt-1",
+          "type": "promptNode",
+          "position": { "x": 100, "y": 100 },
+          "data": {
+            "title": "User Input",
+            "prompt": "{{user_message}}"
+          }
+        },
+        {
+          "id": "llm-1",
+          "type": "llmNode",
+          "position": { "x": 400, "y": 100 },
+          "data": {
+            "title": "Chat Response",
+            "llms": [
+              {
+                "id": "gpt-1",
+                "name": "GPT-3.5",
+                "model": "gpt-3.5-turbo",
+                "base_model": "openai",
+                "temp": 0.7
+              }
+            ]
+          }
+        },
+        {
+          "id": "inspect-1",
+          "type": "inspectorNode",
+          "position": { "x": 700, "y": 100 },
+          "data": {
+            "title": "Response Inspector"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1-2",
+          "source": "prompt-1",
+          "target": "llm-1",
+          "sourceHandle": "output",
+          "targetHandle": "input"
+        },
+        {
+          "id": "e2-3",
+          "source": "llm-1",
+          "target": "inspect-1",
+          "sourceHandle": "output",
+          "targetHandle": "input"
+        }
+      ],
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "groups": []
+    }
+  },
+  {
+    "name": "Multi-Model Comparison",
+    "description": "Compare responses from different LLMs",
+    "data": {
+      "nodes": [
+        {
+          "id": "prompt-1",
+          "type": "promptNode",
+          "position": { "x": 100, "y": 200 },
+          "data": {
+            "title": "Prompt Input",
+            "prompt": "{{prompt}}"
+          }
+        },
+        {
+          "id": "llm-1",
+          "type": "llmNode",
+          "position": { "x": 400, "y": 100 },
+          "data": {
+            "title": "GPT-3.5",
+            "llms": [
+              {
+                "id": "gpt-1",
+                "name": "GPT-3.5",
+                "model": "gpt-3.5-turbo",
+                "base_model": "openai",
+                "temp": 0.7
+              }
+            ]
+          }
+        },
+        {
+          "id": "llm-2",
+          "type": "llmNode",
+          "position": { "x": 400, "y": 300 },
+          "data": {
+            "title": "GPT-4",
+            "llms": [
+              {
+                "id": "gpt-2",
+                "name": "GPT-4",
+                "model": "gpt-4",
+                "base_model": "openai",
+                "temp": 0.7
+              }
+            ]
+          }
+        },
+        {
+          "id": "eval-1",
+          "type": "evaluatorNode",
+          "position": { "x": 700, "y": 200 },
+          "data": {
+            "title": "Response Evaluator",
+            "evaluationType": "comparison"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1-2",
+          "source": "prompt-1",
+          "target": "llm-1",
+          "sourceHandle": "output",
+          "targetHandle": "input"
+        },
+        {
+          "id": "e1-3",
+          "source": "prompt-1",
+          "target": "llm-2",
+          "sourceHandle": "output",
+          "targetHandle": "input"
+        },
+        {
+          "id": "e2-4",
+          "source": "llm-1",
+          "target": "eval-1",
+          "sourceHandle": "output",
+          "targetHandle": "input1"
+        },
+        {
+          "id": "e3-4",
+          "source": "llm-2",
+          "target": "eval-1",
+          "sourceHandle": "output",
+          "targetHandle": "input2"
+        }
+      ],
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "groups": []
+    }
+  },
+  {
+    "name": "Chain of Thought",
+    "description": "Break down complex tasks into steps",
+    "data": {
+      "nodes": [
+        {
+          "id": "prompt-1",
+          "type": "promptNode",
+          "position": { "x": 100, "y": 200 },
+          "data": {
+            "title": "Task Input",
+            "prompt": "Let's solve this step by step:\n{{task}}"
+          }
+        },
+        {
+          "id": "llm-1",
+          "type": "llmNode",
+          "position": { "x": 400, "y": 200 },
+          "data": {
+            "title": "Step Generator",
+            "llms": [
+              {
+                "id": "gpt-1",
+                "name": "GPT-4",
+                "model": "gpt-4",
+                "base_model": "openai",
+                "temp": 0.3
+              }
+            ]
+          }
+        },
+        {
+          "id": "prompt-2",
+          "type": "promptNode",
+          "position": { "x": 700, "y": 200 },
+          "data": {
+            "title": "Step Validator",
+            "prompt": "Validate the following solution steps and suggest improvements:\n{{previous_response}}"
+          }
+        },
+        {
+          "id": "llm-2",
+          "type": "llmNode",
+          "position": { "x": 1000, "y": 200 },
+          "data": {
+            "title": "Validator",
+            "llms": [
+              {
+                "id": "gpt-2",
+                "name": "GPT-4",
+                "model": "gpt-4",
+                "base_model": "openai",
+                "temp": 0.1
+              }
+            ]
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1-2",
+          "source": "prompt-1",
+          "target": "llm-1",
+          "sourceHandle": "output",
+          "targetHandle": "input"
+        },
+        {
+          "id": "e2-3",
+          "source": "llm-1",
+          "target": "prompt-2",
+          "sourceHandle": "output",
+          "targetHandle": "input"
+        },
+        {
+          "id": "e3-4",
+          "source": "prompt-2",
+          "target": "llm-2",
+          "sourceHandle": "output",
+          "targetHandle": "input"
+        }
+      ],
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "groups": []
+    }
+  }
+]

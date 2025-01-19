@@ -38,7 +38,9 @@ import {
 import { UserForcedPrematureExit } from "./errors";
 import CancelTracker from "./canceler";
 import { execPy } from "./pyodide/exec-py";
-
+import path from "path";
+import { Flow } from "../types/flow";
+import fs from "fs";
 // """ =================
 //     SETUP AND GLOBALS
 //     =================
@@ -1495,6 +1497,25 @@ export async function fetchExampleFlow(evalname: string): Promise<Dict> {
   return fetch(`examples/${evalname}.cforge`).then((response) =>
     response.json(),
   );
+}
+
+/**
+ * Fetches all of the default flows from the examples folder.
+ * @returns a Promise with the JSON of the loaded data
+ */
+export async function fetchDefaultFlows(): Promise<Flow[]> {
+  const flows: Flow[] = [];
+  const flowFiles = fs
+    .readdirSync(path.join(__dirname, "../examples"))
+    .filter((file) => file.endsWith(".cforge"));
+
+  for (const flowFile of flowFiles) {
+    const flow = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "../examples", flowFile), "utf8"),
+    );
+    flows.push(flow);
+  }
+  return flows;
 }
 
 /**

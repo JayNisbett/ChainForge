@@ -6,37 +6,35 @@ export interface Group {
   name: string;
   description?: string;
   nodes: string[]; // IDs of nodes in the group
-  isCollapsed?: boolean;
-  position?: { x: number; y: number };
-  size?: { width: number; height: number };
+  isCollapsed: boolean;
 }
 
 export interface FlowData {
   nodes: Node[];
   edges: Edge[];
   viewport: Viewport;
-  groups?: Group[];
+  groups: Group[];
 }
 
 export interface Flow {
   id: string;
   name: string;
   description?: string;
+  version?: string;
+  isDefault?: boolean; // Flag for default flows
   data: FlowData;
-  cache: Record<string, any>;
+  cache?: Dict<string>;
   createdAt: string;
   updatedAt: string;
-  version: string;
-  isDefault?: boolean;
 }
 
 export interface FlowSnapshot {
   id: string;
-  flowId: string;
-  version: number;
-  name?: string;
+  name: string;
   description?: string;
+  version?: string;
+  flowId: string;
+  data: FlowData;
+  cache?: Dict<string>;
   createdAt: string;
-  data: Flow["data"];
-  cache?: any;
 }

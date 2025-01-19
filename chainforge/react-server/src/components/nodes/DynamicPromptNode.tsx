@@ -55,24 +55,28 @@ const DynamicPromptNode: React.FC<DynamicPromptNodeProps> = ({ data, id }) => {
 
   // Initialize field values and extract template variables
   useEffect(() => {
+    if (!Array.isArray(data.fields)) return;
+
     const initialValues: Dict<string> = {};
     const vars = new Set<string>();
 
     data.fields.forEach((field) => {
-      const value = field.defaultValue || field.value || "";
-      initialValues[field.key] = value;
+      // Only set initial values if fieldValues doesn't already have a value
+      if (!fieldValues[field.key]) {
+        const value = field.value || field.defaultValue || "";
+        initialValues[field.key] = value;
+      }
 
-      // Add the field key as a template variable
       vars.add(field.key);
-
-      // Extract any template variables from the value
-      const extracted = extractBracketedSubstrings(value);
+      const extracted = extractBracketedSubstrings(field.value || "");
       extracted.forEach((v) => vars.add(v));
     });
 
-    setFieldValues(initialValues);
+    if (Object.keys(initialValues).length > 0) {
+      setFieldValues((prev) => ({ ...prev, ...initialValues }));
+    }
     setTemplateVars(Array.from(vars));
-  }, [data.fields]);
+  }, [data.fields]); // Remove fieldValues from dependencies
 
   // Handle field value changes
   const handleFieldChange = useCallback(
@@ -89,12 +93,19 @@ const DynamicPromptNode: React.FC<DynamicPromptNodeProps> = ({ data, id }) => {
         });
         setTemplateVars(Array.from(vars));
 
-        setDataPropsForNode(id, { fields: newValues });
-        pingOutputNodes(id);
+        // Only update node data if fields is an array
+        if (Array.isArray(data.fields)) {
+          const updatedFields = data.fields.map((field) =>
+            field.key === key ? { ...field, value } : field,
+          );
+          setDataPropsForNode(id, { fields: updatedFields });
+          pingOutputNodes(id);
+        }
+
         return newValues;
       });
     },
-    [id, setDataPropsForNode, pingOutputNodes],
+    [id, setDataPropsForNode, pingOutputNodes, data.fields],
   );
 
   // Reference for measuring field positions
@@ -172,7 +183,11 @@ const DynamicPromptNode: React.FC<DynamicPromptNodeProps> = ({ data, id }) => {
       />
 
       <Box p="xs" ref={containerRef}>
-        {data.fields.map((field) => renderField(field))}
+        {Array.isArray(data.fields) ? (
+          data.fields.map((field) => renderField(field))
+        ) : (
+          <div>Error: Invalid fields data</div>
+        )}
 
         {data.displayButton && (
           <Box mt="md">

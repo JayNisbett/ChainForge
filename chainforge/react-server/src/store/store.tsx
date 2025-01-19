@@ -10,6 +10,7 @@ import {
   MarkerType,
   Connection,
   ReactFlowInstance,
+  Viewport,
 } from "reactflow";
 import { escapeBraces } from "../backend/template";
 import {
@@ -230,6 +231,18 @@ export interface StoreHandles {
   // ReactFlowInstance
   rfInstance: ReactFlowInstance | null;
   setRfInstance: (instance: ReactFlowInstance | null) => void;
+
+  // Viewport
+  viewport: Viewport;
+  setViewport: (viewport: Viewport) => void;
+
+  // Groups
+  setGroups: (groups: Group[]) => void;
+  updateGroup: (groupId: string, updates: Partial<Group>) => void;
+
+  // Cache
+  cache: Dict<any>;
+  restoreCache: (cache: Dict<any>) => void;
 }
 
 // A global store of variables, used for maintaining state
@@ -886,6 +899,15 @@ export const useStore = create<StoreHandles>((set, get) => ({
     const selectedNodes = get().getSelectedNodes();
     set({ selectedNodes });
   },
+  setGroups: (groups: Group[]) => set({ groups }),
+
+  updateGroup: (groupId: string, updates: Partial<Group>) => {
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === groupId ? { ...g, ...updates } : g,
+      ),
+    }));
+  },
 
   ungroup: (groupNodeId: string) => {
     const groupNode = get().nodes.find((n) => n.id === groupNodeId);
@@ -950,6 +972,14 @@ export const useStore = create<StoreHandles>((set, get) => ({
   // ReactFlowInstance
   rfInstance: null,
   setRfInstance: (instance) => set({ rfInstance: instance }),
+
+  // Viewport
+  viewport: { x: 0, y: 0, zoom: 1 },
+  setViewport: (viewport) => set({ viewport }),
+
+  // Cache
+  cache: {},
+  restoreCache: (cache) => set({ cache }),
 }));
 
 export default useStore;

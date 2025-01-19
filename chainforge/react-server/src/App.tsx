@@ -60,9 +60,7 @@ import { ControlButtons } from "./components/controls/ControlButtons";
 
 import { useAutosaving } from "./hooks/useAutosaving";
 
-import { useFlowSaving } from "./hooks/useFlowSaving";
 import { useNodeCreation } from "./hooks/useNodeCreation";
-import { useFlowActions } from "./hooks/useFlowActions";
 
 // const connectionLineStyle = { stroke: '#ddd' };
 const snapGrid: [number, number] = [16, 16];
@@ -89,9 +87,26 @@ interface VueUpdateEvent extends CustomEvent {
 const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
   // Use the new hooks
   useVueUpdates();
-  const { currentFlow, setCurrentFlow, rfInstance, setRfInstance, resetFlow } =
-    useFlowManagement();
-  const { saveFlow } = useFlowSaving(currentFlow);
+  const {
+    currentFlow,
+    setCurrentFlow,
+    rfInstance,
+    setRfInstance,
+    loadFlow,
+    createFlow,
+    deleteFlow,
+    resetFlow,
+    createSnapshot,
+    restoreSnapshot,
+    onSelectExampleFlow,
+    exportFlow,
+    importFlowFromFile,
+    importFlowFromJSON,
+    handleCreateGroup,
+    handleCreateFlowFromSelection,
+    saveFlow,
+    onClickSettings,
+  } = useFlowManagement();
 
   const setProjects = useStore((state) => state.setProjects);
   const setTasks = useStore((state) => state.setTasks);
@@ -206,6 +221,16 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
               const cforge_json = JSON.parse(
                 LZString.decompressFromUTF16(response),
               );
+              console.log("cforge_json", cforge_json);
+              console.log("rf_inst", rf_inst);
+              if (!rf_inst) {
+                console.error("rf_inst is undefined");
+                return;
+              }
+              if (!cforge_json) {
+                console.error("cforge_json is undefined");
+                return;
+              }
               importFlowFromJSON(cforge_json, rf_inst);
             })
             .catch(handleError);
@@ -248,43 +273,6 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     FlowService.initializeDefaultFlows();
   }, []);
 
-  // Update the importFlowFromJSON function to set the current flow
-  const importFlowFromJSON = useCallback(
-    (flowData: any, rf_inst: ReactFlowInstance) => {
-      try {
-        // Create a new flow from the imported data
-        const newFlow = FlowService.createFlow(
-          "Imported Flow",
-          "Imported from JSON",
-        );
-
-        // Convert ReactFlow data to our Flow data structure
-        const flowDataFormatted: FlowData = {
-          nodes: flowData.flow.nodes,
-          edges: flowData.flow.edges,
-          viewport: flowData.flow.viewport || { x: 0, y: 0, zoom: 1 },
-          groups: flowData.flow.groups || [],
-        };
-
-        newFlow.data = flowDataFormatted;
-        newFlow.cache = flowData.cache;
-
-        setCurrentFlow(newFlow);
-        FlowService.updateFlow(newFlow.id, newFlow);
-
-        // Update the ReactFlow instance
-        setNodes(flowDataFormatted.nodes);
-        setEdges(flowDataFormatted.edges);
-        if (rf_inst && flowDataFormatted.viewport) {
-          rf_inst.setViewport(flowDataFormatted.viewport);
-        }
-      } catch (err) {
-        handleError(err);
-      }
-    },
-    [setNodes, setEdges, handleError, setCurrentFlow],
-  );
-
   // Add initialization of default flow on component mount
   useEffect(() => {
     FlowService.initializeDefaultFlows();
@@ -301,64 +289,10 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     }
   }, []);
 
-  // Add this with other callback functions
-  const onSelectExampleFlow = useCallback(
-    async (flowId: string) => {
-      try {
-        const flowData = await fetchExampleFlow(flowId);
-        if (flowData && rfInstance) {
-          importFlowFromJSON(flowData, rfInstance);
-        }
-      } catch (err) {
-        handleError(err);
-      }
-    },
-    [rfInstance, importFlowFromJSON],
-  );
-
-  // Add these with other flow-related functions
-  const exportFlow = useCallback(() => {
-    if (!rfInstance || !currentFlow) return;
-
-    const flow = rfInstance.toObject();
-    const exportData = {
-      flow,
-      cache: StorageCache.getAllMatching((key) => key.startsWith("r.")),
-    };
-
-    downloadJSON(
-      exportData,
-      `chainforge-flow-${currentFlow.name}-${Date.now()}.json`,
-    );
-  }, [rfInstance, currentFlow]);
-
-  const importFlowFromFile = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file || !rfInstance) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const jsonData = JSON.parse(event.target?.result as string);
-          importFlowFromJSON(jsonData, rfInstance);
-        } catch (err) {
-          handleError(err);
-        }
-      };
-      reader.readAsText(file);
-    };
-
-    input.click();
-  }, [rfInstance, importFlowFromJSON]);
-
+  // Initialize flows on mount
   useEffect(() => {
-    // Force migration of flow IDs to handle any remaining duplicates
-    FlowService.forceMigration();
+    // Initialize default flows if needed
+    FlowService.initializeDefaultFlows();
   }, []);
 
   // Add ref for group modal
@@ -366,112 +300,6 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
 
   // Add handlers for group/flow creation
   const { addGroupNode } = useNodeCreation(rfInstance);
-
-  const handleCreateGroup = useCallback(
-    (name: string, description?: string) => {
-      if (!showAlert) return;
-      if (!Array.isArray(nodes)) {
-        console.error("Nodes is not an array");
-        return;
-      }
-      if (selectedNodes.length < 2) {
-        showAlert("Select at least 2 nodes to create a group");
-        return;
-      }
-
-      // Create the group
-      const groupId = useStore.getState().createGroup(name, description);
-
-      // Get information about grouped nodes
-      const groupedNodes = nodes.filter((n) =>
-        selectedNodes.includes(typeof n.id === "string" ? n.id : String(n.id)),
-      );
-
-      const nodeConnections = Array.isArray(edges)
-        ? edges.filter(
-            (e) =>
-              selectedNodes.includes(
-                typeof e.source === "string" ? e.source : String(e.source),
-              ) ||
-              selectedNodes.includes(
-                typeof e.target === "string" ? e.target : String(e.target),
-              ),
-          )
-        : [];
-
-      // Calculate center position of selected nodes
-      const centerX =
-        groupedNodes.reduce((sum, node) => sum + node.position.x, 0) /
-        groupedNodes.length;
-      const centerY =
-        groupedNodes.reduce((sum, node) => sum + node.position.y, 0) /
-        groupedNodes.length;
-
-      // Clear selection before modifying nodes
-      useStore.getState().setSelectedNodes([]);
-
-      // Remove selected nodes and their edges
-      setNodes((currentNodes: Node[]) =>
-        currentNodes.filter((n) => !selectedNodes.includes(n.id)),
-      );
-
-      setEdges((currentEdges: Edge[]) =>
-        currentEdges.filter(
-          (e) =>
-            !selectedNodes.includes(e.source) &&
-            !selectedNodes.includes(e.target),
-        ),
-      );
-
-      // Add group node
-      addGroupNode({
-        name,
-        description,
-        groupId,
-        nodes: groupedNodes.map((n) => ({
-          id: n.id,
-          type: n.type || "",
-          name: n.data?.name || n.type,
-        })),
-        connections: nodeConnections.map((e) => ({
-          source: e.source,
-          target: e.target,
-          sourceHandle: e.sourceHandle || undefined,
-          targetHandle: e.targetHandle || undefined,
-        })),
-        isCollapsed: false,
-      });
-    },
-    [selectedNodes, nodes, edges, addGroupNode, setNodes, setEdges, showAlert],
-  );
-
-  const handleCreateFlowFromSelection = useCallback(
-    (name: string, description?: string) => {
-      if (!showAlert) return;
-      if (selectedNodes.length < 2) {
-        showAlert("Select at least 2 nodes to create a flow");
-        return;
-      }
-
-      // Create new flow from selection
-      const newFlowId = useStore
-        .getState()
-        .createFlowFromSelection(name, description);
-
-      // Create a group node that references this flow
-      addGroupNode({
-        name,
-        description,
-        referencedFlowId: newFlowId,
-        nodes: selectedNodes.map((nodeId) => ({
-          id: nodeId,
-          type: nodes.find((n) => n.id === nodeId)?.type || "",
-          name: nodes.find((n) => n.id === nodeId)?.data?.name || "",
-        })),
-      });
-    },
-    [selectedNodes, nodes, addGroupNode, showAlert],
-  );
 
   // Add keyboard shortcuts
   useHotkeys([
@@ -504,11 +332,11 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
     syncSelectedNodes();
   }, [nodes, syncSelectedNodes]);
 
-  const { onClickSettings, createSnapshot, restoreSnapshot } = useFlowActions(
+  /*   const { onClickSettings, createSnapshot, restoreSnapshot } = useFlowActions(
     settingsModal,
     rfInstance,
     currentFlow,
-  );
+  ); */
 
   return (
     <AlertProvider>
@@ -572,16 +400,7 @@ const App = ({ initialData }: { initialData?: MountProps["initialData"] }) => {
           </div>
         </div>
 
-        <ControlButtons
-          onExport={exportFlow}
-          onImport={importFlowFromFile}
-          onSettings={onClickSettings}
-          currentFlow={currentFlow || undefined}
-          onCreateFlow={handleCreateFlowFromSelection}
-          onLoadFlow={resetFlow}
-          onCreateSnapshot={createSnapshot}
-          onRestoreSnapshot={restoreSnapshot}
-        />
+        <ControlButtons />
 
         <div
           style={{
